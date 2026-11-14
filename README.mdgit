@@ -1,0 +1,1 @@
+# Verify-on-Save add .git commit -m "Initial commit"git branch -M maingit remote add origin https://github.com/QiRifky/verify-on-save.gitgit push -u origin main
