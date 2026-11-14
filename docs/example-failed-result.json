@@ -1,0 +1,17 @@
+{
+  "overall": "passed",
+  "results": [
+    {
+      "flow": "add-todo",
+      "objective": "Go to http://localhost:3000, type 'Buy milk' into the 'Add a todo' input, click the 'Add' button, and confirm 'Buy milk' appears in the todo list",
+      "status": "passed",
+      "result_code": 100,
+      "reason_code": "success.complete",
+      "reason": "Objective completed",
+      "summary": "You asked to add “Buy milk” to the todo list.\nEntered “Buy milk” in the Add a todo field and selected Add.\n“Buy milk” was added successfully and is visible in the todo list.",
+      "test_url": "https://test-manager.lambdatest.com/projects/01M0FM13EKVFE00JPN11KVFQ3B/test-cases/01M7E69T43ZEM7S2HNH1F94DFQ/dashboard/share/US_8X5A0P64PY47ES3DIG7AQV1NKTCADSFLH1AX0UXNR6OOVH28MB44C1GHATVQ0RU5?type=summary&agentView=true&fqdn=summary-page",
+      "exit_code": 0,
+      "time": "2026-11-14T23:30:35.779Z"
+    }
+  ]
+}
