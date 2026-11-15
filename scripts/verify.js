@@ -11,6 +11,14 @@ const FLOWS = [
     name: "add-todo",
     objective: `Go to ${APP_URL}, type 'Buy milk' into the 'Add a todo' input, click the 'Add' button, and confirm 'Buy milk' appears in the todo list`,
   },
+  {
+    name: "items-left-counter",
+    objective: `Go to ${APP_URL}, add a todo 'Buy milk' and another todo 'Walk dog', tick the checkbox next to 'Buy milk', and confirm the counter text reads '1 items left'`,
+  },
+  {
+    name: "delete-todo",
+    objective: `Go to ${APP_URL}, add a todo 'Buy milk', click its 'Delete' button, and confirm the list is empty and the counter reads '0 items left'`,
+  },
 ];
 
 function runKane(flow) {

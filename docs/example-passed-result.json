@@ -1,0 +1,41 @@
+{
+  "overall": "passed",
+  "results": [
+    {
+      "flow": "add-todo",
+      "objective": "Go to http://localhost:3000, type 'Buy milk' into the 'Add a todo' input, click the 'Add' button, and confirm 'Buy milk' appears in the todo list",
+      "status": "passed",
+      "result_code": 100,
+      "reason_code": "success.complete",
+      "reason": "Objective completed",
+      "summary": "You asked to add “Buy milk” to the todo list.\nEntered “Buy milk” in the Add a todo field and selected Add.\n“Buy milk” was successfully added to the todo list.",
+      "test_url": "https://test-manager.lambdatest.com/projects/01M0FM13EKVFE00JPN11KVFQ3B/test-cases/01M7ESH4AS98X1KSNAJ6TKDC2J/dashboard/share/US_MAAUMO1QQVB9EYRORGZCHF8BUUE1OIYYFUSVLYY8Z20PM50O9GB331XU06RZRRPO?type=summary&agentView=true&fqdn=summary-page",
+      "exit_code": 0,
+      "time": "2026-11-15T05:06:49.855Z"
+    },
+    {
+      "flow": "items-left-counter",
+      "objective": "Go to http://localhost:3000, add a todo 'Buy milk' and another todo 'Walk dog', tick the checkbox next to 'Buy milk', and confirm the counter text reads '1 items left'",
+      "status": "passed",
+      "result_code": 100,
+      "reason_code": "success.complete",
+      "reason": "Objective completed",
+      "summary": "Added the two requested to-dos: “Buy milk” and “Walk dog.”\nMarked “Buy milk” as completed.\nThe remaining-items counter showed “1 items left,” confirming that one to-do remains.",
+      "test_url": "https://test-manager.lambdatest.com/projects/01M0FM13EKVFE00JPN11KVFQ3B/test-cases/01M7ESKW60SC6K6MCEKAZ6NBDP/dashboard/share/US_P8IGTIS62GZ4NCWN0AS1WFH68QT0DTESSYIYYKNU9PANPGD1RUK82A4EKXTSBNIN?type=summary&agentView=true&fqdn=summary-page",
+      "exit_code": 0,
+      "time": "2026-11-15T05:08:16.448Z"
+    },
+    {
+      "flow": "delete-todo",
+      "objective": "Go to http://localhost:3000, add a todo 'Buy milk', click its 'Delete' button, and confirm the list is empty and the counter reads '0 items left'",
+      "status": "passed",
+      "result_code": 100,
+      "reason_code": "success.complete",
+      "reason": "Objective completed",
+      "summary": "You asked to add the todo “Buy milk” and then delete it.\nAdded “Buy milk” to the todo list and selected its Delete button.\nThe todo was removed successfully; the list is empty and the counter shows “0 items left”.",
+      "test_url": "https://test-manager.lambdatest.com/projects/01M0FM13EKVFE00JPN11KVFQ3B/test-cases/01M7ESPH2X77M4FEQ8Z15DNBPC/dashboard/share/US_J8OXERGV8ZVR7S88HZCAWU6MRL528KC6L9LFYIJPAWMAAHTYVTCOS5WBE6PO53N9?type=summary&agentView=true&fqdn=summary-page",
+      "exit_code": 0,
+      "time": "2026-11-15T05:09:49.153Z"
+    }
+  ]
+}
