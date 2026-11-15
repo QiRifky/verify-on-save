@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Verify with Kane",
+      "trigger": "PostFileSave",
+      "matcher": "(index\\.html|server\\.js)$",
+      "action": {
+        "type": "command",
+        "command": "node scripts/verify.js"
+      }
+    }
+  ]
+}
