@@ -1,63 +1,12 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<title>Todo</title>
-<style>
-  body { font-family: sans-serif; max-width: 420px; margin: 40px auto; }
-  form { display: flex; gap: 8px; }
-  input[type=text] { flex: 1; padding: 6px; }
-  ul { list-style: none; padding: 0; }
-  li { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
-  li span { flex: 1; }
-  li.done span { text-decoration: line-through; color: #888; }
-</style>
-</head>
-<body>
-<h1>Todo</h1>
-<form id="form">
-  <input type="text" id="text" placeholder="Add a todo">
-  <button type="submit">Add</button>
-</form>
-<ul id="list"></ul>
-<p id="count"></p>
-<script>
-  let todos = [];
-  let nextId = 1;
-  const list = document.getElementById('list');
-  const count = document.getElementById('count');
-  const input = document.getElementById('text');
-
-  function render() {
-    list.innerHTML = '';
-    todos.forEach(t => {
-      const li = document.createElement('li');
-      if (t.done) li.className = 'done';
-      const cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.checked = t.done;
-      cb.onchange = () => { t.done = cb.checked; render(); };
-      const span = document.createElement('span');
-      span.textContent = t.text;
-      const del = document.createElement('button');
-      del.textContent = 'Delete';
-      del.onclick = () => { todos = todos.filter(x => x.id !== t.id); render(); };
-      li.append(cb, span, del);
-      list.appendChild(li);
-    });
-    count.textContent = todos.filter(t => !t.done).length + ' items left';
-  }
-
-  document.getElementById('form').onsubmit = e => {
-    e.preventDefault();
-    const text = input.value.trim();
-    if (!text) return;
-    todos.push({ id: nextId++, text, done: false });
-    input.value = '';
-    render();
-  };
-
-  render();
-</script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Skincare Shelf</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

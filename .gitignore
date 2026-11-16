@@ -1,2 +1,4 @@
 node_modules/
-.verify/
+.verify/reference/
+index.backup.html
+dist/
