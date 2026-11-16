@@ -4,7 +4,7 @@
     {
       "name": "Verify with Kane",
       "trigger": "PostFileSave",
-      "matcher": "(index\\.html|server\\.js)$",
+      "matcher": "src[\\\\/].+\\.(tsx|ts)$",
       "action": {
         "type": "command",
         "command": "node scripts/verify.js"
