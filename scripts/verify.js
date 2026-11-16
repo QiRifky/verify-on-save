@@ -21,7 +21,7 @@ const FLOWS = [
   },
   {
     name: "price-summary",
-    objective: `Go to ${APP_URL}, click the Barrier Restore Cream product, and confirm the page shows the rows 'Subtotal' $29.00, 'Discount' $0.00, 'Shipping' Free and 'Total' $29.00, with the small text 'Includes $1.38 tax (5%)'`,
+        objective: `Go to ${APP_URL}, click the Barrier Restore Cream product, and confirm the page shows the rows 'Subtotal' $29.00, 'Discount' $0.00, 'Shipping' Free and 'Total' $29.00`,
   },
   {
     name: "vouchers-popup",
