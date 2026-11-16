@@ -5,6 +5,10 @@ const path = require("path");
 const APP_URL = process.env.APP_URL || "http://127.0.0.1:3000";
 const OUT_DIR = path.join(__dirname, "..", ".verify");
 
+// A "passed" run whose summary says the task was not completed is not trusted
+const DOUBT =
+  /could not be (completed|confirmed|obtained)|couldn.t be|cannot be confirmed|not available|no completed|no specific|stopped responding|without a confirmed|unable to|not confirmed/i;
+
 // Objectives avoid double quotes so they are safe in the Windows shell
 const FLOWS = [
   {
@@ -13,7 +17,11 @@ const FLOWS = [
   },
   {
     name: "pay-quantity-total",
-    objective: `Go to ${APP_URL}, click the Barrier Restore Cream product, click the 'Increase quantity' button once, confirm the pay button reads 'Pay $58.00', click it, and confirm a receipt appears with the text 'Payment successful' and 'Total paid: $58.00'`,
+    objective: `Go to ${APP_URL}, click the Barrier Restore Cream product, click the 'Increase quantity' button once, confirm the pay button reads 'Pay $58.00', then click the pay button and confirm the receipt shows 'Payment successful' and 'Total paid: $58.00'`,
+  },
+  {
+    name: "price-summary",
+    objective: `Go to ${APP_URL}, click the Barrier Restore Cream product, and confirm the page shows the rows 'Subtotal' $29.00, 'Discount' $0.00, 'Shipping' Free and 'Total' $29.00, with the small text 'Includes $1.38 tax (5%)'`,
   },
   {
     name: "vouchers-popup",
@@ -61,14 +69,19 @@ function runKane(flow) {
           if (evt.type === "run_end") end = evt;
         } catch {}
       }
+      let status = end ? end.status : "error";
+      const summary = end ? end.summary : null;
+      if (status === "passed" && summary && DOUBT.test(summary)) {
+        status = "suspect";
+      }
       resolve({
         flow: flow.name,
         objective: flow.objective,
-        status: end ? end.status : "error",
+        status,
         result_code: end ? end.result_code : null,
         reason_code: end ? end.reason_code : null,
         reason: end ? end.reason : stderr.slice(-500) || "No run_end event found",
-        summary: end ? end.summary : null,
+        summary,
         test_url: end ? end.test_url : null,
         exit_code: code,
         time: new Date().toISOString(),
@@ -79,8 +92,14 @@ function runKane(flow) {
 
 (async () => {
   fs.mkdirSync(OUT_DIR, { recursive: true });
+  const only = process.argv.slice(2);
+  const flows = only.length ? FLOWS.filter((f) => only.includes(f.name)) : FLOWS;
+  if (flows.length === 0) {
+    console.log("No matching flow. Names: " + FLOWS.map((f) => f.name).join(", "));
+    process.exit(1);
+  }
   const results = [];
-  for (const flow of FLOWS) {
+  for (const flow of flows) {
     console.log(`Running flow: ${flow.name} ...`);
     results.push(await runKane(flow));
   }

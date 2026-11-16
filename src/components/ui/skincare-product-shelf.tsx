@@ -490,6 +490,7 @@ const VOUCHERS: Voucher[] = [
   { code: "SAVE20", amount: 20, minOrder: 120, title: "$20.00 off", condition: "Minimum order $120.00", note: "Needs an order of $120.00 or more. A flat $20.00 off the whole order; spending more does not increase it." },
 ];
 const VOUCHER_RULE = "Only one voucher can be applied per order. WELCOME10, BUY3SAVE10, BUY5SAVE15, SERUM15 and SPF12 discount only 1, 3, 5, 1 and 1 items respectively; the rest stay at the regular price. SAVE10 and SAVE20 take a flat dollar amount off the whole order. Discounts never stack and never grow with quantity.";
+const TAX_RATE = 0.05;
 
 // null when the voucher can be used, otherwise the reason it cannot
 function checkVoucher(v: Voucher, p: Product, subtotal: number, qty: number, currency: string): string | null {
@@ -650,6 +651,7 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
     : applied.amount ? Math.round(Math.min(applied.amount, subtotal) * 100) / 100
     : Math.round((applied.maxItems ? price * Math.min(qty, applied.maxItems) : subtotal) * (applied.percent ?? 0)) / 100;
   const total = Math.round((subtotal - discount) * 100) / 100;
+  const tax = Math.round((total * TAX_RATE / (1 + TAX_RATE)) * 100) / 100; // already included in the prices, informational only
   const payLabel = paying ? "Processing..." : `Pay ${currency}${total.toFixed(2)}`;
   const add = () => {
     if (paying) return;
@@ -888,13 +890,13 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
             </div>
           )}
 
-          {applied && (
-            <dl className="mt-5 grid gap-1.5 text-[15px] tabular-nums">
-              <div className="flex justify-between gap-4"><dt className="text-[#6f6a64]">Subtotal:</dt><dd>{currency}{subtotal.toFixed(2)}</dd></div>
-              <div className="flex justify-between gap-4"><dt className="text-[#6f6a64]">Discount:</dt><dd>-{currency}{discount.toFixed(2)}</dd></div>
-              <div className="flex justify-between gap-4 font-semibold"><dt>Total:</dt><dd>{currency}{total.toFixed(2)}</dd></div>
-            </dl>
-          )}
+          <dl className="mt-5 grid gap-1.5 text-[15px] tabular-nums">
+            <div className="flex justify-between gap-4"><dt className="text-[#6f6a64]">Subtotal:</dt><dd>{currency}{subtotal.toFixed(2)}</dd></div>
+            <div className="flex justify-between gap-4"><dt className="text-[#6f6a64]">Discount:</dt><dd>{applied ? `-${currency}${discount.toFixed(2)}` : `${currency}0.00`}</dd></div>
+            <div className="flex justify-between gap-4"><dt className="text-[#6f6a64]">Shipping:</dt><dd>Free</dd></div>
+            <div className="flex justify-between gap-4 font-semibold"><dt>Total:</dt><dd>{currency}{total.toFixed(2)}</dd></div>
+            <div className="text-[13px] text-[#6f6a64]">Includes ${tax.toFixed(2)} tax (5%)</div>
+          </dl>
 
           <div className="mt-7 flex items-stretch gap-3">
             <div className="flex items-center rounded-xl border border-[#d9d4cd] bg-white">
@@ -1052,6 +1054,7 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
                 <span>Total paid:</span>
                 <span className="tabular-nums">{currency}{total.toFixed(2)}</span>
               </div>
+              <p className="mt-1 text-[13px] text-[#6f6a64] tabular-nums">Includes tax: ${tax.toFixed(2)}</p>
               <p className="mt-4 text-[12px] text-[#6f6a64]">Demo only. No real payment is processed.</p>
               <button
                 ref={doneRef}
