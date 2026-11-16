@@ -11,12 +11,13 @@
  *
  * Motion follows Apple's fluid-interface rules: critically damped springs, symmetric enter and exit,
  * velocity handed off on release, and a cross-fade under prefers-reduced-motion.
+ * Modified for the Verify-on-save demo: Add to Bag became a Pay button with a payment receipt.
  */
 "use client";
 
 import { useEffect, useId, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from "react";
 import { AnimatePresence, LayoutGroup, animate, motion, useMotionValue, useReducedMotion, useTransform, type MotionValue } from "motion/react";
-import { ChevronDown, ChevronLeft, Minus, Plus, ShoppingBag, Star } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, Minus, Plus, ShoppingBag, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Kind = "jar" | "tube" | "pump" | "dropper" | "perfume" | "mist" | "bottle" | "stick" | "lip";
@@ -583,7 +584,10 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
   const spin = useMotionValue(0);
   const [size, setSize] = useState(p.sizes[0]);
   const [qty, setQty] = useState(1);
-  const [added, setAdded] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const [receipt, setReceipt] = useState(null as { order: string; date: string } | null);
+  const doneRef = useRef(null as HTMLButtonElement | null);
+  const payTimer = useRef(0);
   const [section, setSection] = useState("Details" as string | null);
   const closeRef = useRef(null as HTMLButtonElement | null);
   const drag = useRef(null as { x: number; v: number; samples: { x: number; t: number }[] } | null);
@@ -597,12 +601,36 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
   }, [spin, reduce]);
 
   const price = p.price * (p.sizes.indexOf(size) > 0 ? 1.7 : 1);
+  const total = price * qty;
+  const payLabel = paying ? "Processing..." : `Pay ${currency}${total.toFixed(2)}`;
   const add = () => {
+    if (paying) return;
+    setPaying(true);
     onAdd(qty);
-    setAdded(true);
     bagRef.current?.animate([{ transform: "scale(1)" }, { transform: "scale(1.18)" }, { transform: "scale(1)" }], { duration: 320, easing: "ease-out" });
-    setTimeout(() => setAdded(false), 1800);
+    payTimer.current = window.setTimeout(() => {
+      setPaying(false);
+      setReceipt({
+        order: "ORD-" + Math.floor(100000 + Math.random() * 900000),
+        date: new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" }),
+      });
+    }, 900);
   };
+  useEffect(() => () => window.clearTimeout(payTimer.current), []);
+
+  // receipt: focus Done; Escape closes only the receipt (capture phase, so the shelf's window listener never sees it)
+  useEffect(() => {
+    if (!receipt) return;
+    doneRef.current?.focus({ preventScroll: true });
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.stopImmediatePropagation();
+      e.stopPropagation();
+      setReceipt(null);
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [receipt]);
 
   // drag to turn: 1:1 while held, then keep the release speed and settle facing front
   const onDown = (e: ReactPointerEvent<HTMLDivElement>) => {
@@ -741,9 +769,11 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
             <button
               type="button"
               onClick={add}
-              className="h-12 flex-1 rounded-[10px] bg-[#111111] text-[16px] font-medium tracking-[-0.01em] text-white transition-[background-color,transform] duration-100 hover:bg-[#000000] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111111]"
+              disabled={paying}
+              aria-label={payLabel}
+              className="h-12 flex-1 rounded-[10px] bg-[#111111] text-[16px] font-medium tracking-[-0.01em] text-white tabular-nums transition-[background-color,transform] duration-100 hover:bg-[#000000] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111111] disabled:cursor-progress"
             >
-              <span aria-live="polite">{added ? "Added to Bag" : "Add to Bag"}</span>
+              <span aria-live="polite">{payLabel}</span>
             </button>
           </div>
 
@@ -779,6 +809,67 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
           </div>
         </motion.div>
       </div>
+
+      <AnimatePresence>
+        {receipt && (
+          <motion.div
+            key="receipt"
+            className="fixed inset-0 z-50 grid place-items-center bg-[#f3f1ed]/70 p-5 backdrop-blur-md"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduce ? 0.15 : 0.25 }}
+          >
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Payment receipt"
+              className="w-full max-w-[420px] rounded-[16px] border border-[#e6e1da] bg-white p-[28px] text-[#111111] shadow-[0_24px_60px_-20px_rgba(0,0,0,0.25)]"
+              initial={{ opacity: 0, y: reduce ? 0 : 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: reduce ? 0 : 16 }}
+              transition={reduce ? { duration: 0.15 } : SPRING}
+            >
+              <div className="grid size-12 place-items-center rounded-full bg-[#111111] text-white">
+                <Check className="size-6" strokeWidth={2.4} aria-hidden />
+              </div>
+              <h3 className="mt-4 text-[24px] font-semibold tracking-[-0.01em]">Payment successful</h3>
+              <p className="mt-1 text-[15px] text-[#6f6a64]">Thank you for your order</p>
+              <div className="my-5 border-t border-dashed border-[#d9d4cd]" />
+              <dl className="grid gap-2 text-[15px]">
+                {([
+                  ["Order:", receipt.order],
+                  ["Date:", receipt.date],
+                  ["Item:", p.name],
+                  ["Size:", size],
+                  ["Quantity:", String(qty)],
+                  ["Unit price:", `${currency}${price.toFixed(2)}`],
+                  ["Delivery:", "Free"],
+                ] as const).map(([k, v]) => (
+                  <div key={k} className="flex justify-between gap-4">
+                    <dt className="text-[#6f6a64]">{k}</dt>
+                    <dd className="text-right tabular-nums">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+              <div className="my-4 border-t border-[#e6e1da]" />
+              <div className="flex justify-between gap-4 text-[18px] font-semibold">
+                <span>Total paid:</span>
+                <span className="tabular-nums">{currency}{total.toFixed(2)}</span>
+              </div>
+              <p className="mt-4 text-[12px] text-[#6f6a64]">Demo only. No real payment is processed.</p>
+              <button
+                ref={doneRef}
+                type="button"
+                onClick={() => { setReceipt(null); onClose(); }}
+                className="mt-5 h-12 w-full rounded-[10px] bg-[#111111] text-[16px] font-medium text-white transition-colors hover:bg-[#000000] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111111]"
+              >
+                Done
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

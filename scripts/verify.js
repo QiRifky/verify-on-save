@@ -2,22 +2,30 @@ const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
-const APP_URL = process.env.APP_URL || "http://localhost:3000";
+const APP_URL = process.env.APP_URL || "http://127.0.0.1:3000";
 const OUT_DIR = path.join(__dirname, "..", ".verify");
 
-// Tulis objective tanpa tanda kutip ganda agar aman di Windows
+// Objectives avoid double quotes so they are safe in the Windows shell
 const FLOWS = [
   {
-    name: "add-todo",
-    objective: `Go to ${APP_URL}, type 'Buy milk' into the 'Add a todo' input, click the 'Add' button, and confirm 'Buy milk' appears in the todo list`,
+    name: "open-product",
+    objective: `Go to ${APP_URL}, click the Barrier Restore Cream product on the shelf, and confirm the product page opens with the heading 'Barrier Restore Cream' and the price '$29.00'`,
   },
   {
-    name: "items-left-counter",
-    objective: `Go to ${APP_URL}, add a todo 'Buy milk' and another todo 'Walk dog', tick the checkbox next to 'Buy milk', and confirm the counter text reads '1 items left'`,
+    name: "size-price",
+    objective: `Go to ${APP_URL}, click the Barrier Restore Cream product, choose the '100 ml' size, and confirm the pay button reads 'Pay $49.30'`,
   },
   {
-    name: "delete-todo",
-    objective: `Go to ${APP_URL}, add a todo 'Buy milk', click its 'Delete' button, and confirm the list is empty and the counter reads '0 items left'`,
+    name: "pay-quantity-total",
+    objective: `Go to ${APP_URL}, click the Barrier Restore Cream product, click the 'Increase quantity' button once, confirm the pay button reads 'Pay $58.00', click it, and confirm a receipt appears with the text 'Payment successful' and 'Total paid: $58.00'`,
+  },
+  {
+    name: "pay-large-size",
+    objective: `Go to ${APP_URL}, click the Barrier Restore Cream product, choose the '100 ml' size, click the 'Increase quantity' button once, click the pay button, and confirm the receipt shows 'Quantity: 2' and 'Total paid: $98.60'`,
+  },
+  {
+    name: "receipt-done",
+    objective: `Go to ${APP_URL}, click the Barrier Restore Cream product, click the pay button, wait for the receipt, click 'Done', and confirm the shelf with all the products is visible again, including the 'Squalane' product priced '$10'`,
   },
 ];
 
