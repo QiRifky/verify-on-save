@@ -481,15 +481,15 @@ const INK = "#111111";
 
 type Voucher = { code: string; percent: number; category?: string; minOrder?: number; minQty?: number; title: string; condition: string; note?: string };
 const VOUCHERS: Voucher[] = [
-  { code: "WELCOME10", percent: 10, title: "10% off", condition: "Any order", note: "Fixed 10% off. One code per order." },
-  { code: "BUY3SAVE10", percent: 10, minQty: 3, title: "10% off", condition: "Buy 3 or more of the same item", note: "The discount stays 10%: buying 6 is still 10%, not 20%." },
-  { code: "BUY5SAVE15", percent: 15, minQty: 5, title: "15% off", condition: "Buy 5 or more of the same item", note: "The discount stays 15% however many you buy." },
-  { code: "SERUM15", percent: 15, category: "Serum", title: "15% off", condition: "Serum products only", note: "Fixed 15% off the whole order, not per item." },
-  { code: "SPF12", percent: 12, category: "Sunscreen", title: "12% off", condition: "Sunscreen products only", note: "Fixed 12% off the whole order, not per item." },
-  { code: "BIG20", percent: 20, minOrder: 60, title: "20% off", condition: "Minimum order $60.00", note: "Fixed 20% off: a bigger order does not earn a bigger discount." },
-  { code: "LUXE25", percent: 25, minOrder: 120, title: "25% off", condition: "Minimum order $120.00", note: "Fixed 25% off, the largest discount available." },
+  { code: "WELCOME10", percent: 10, title: "10% off", condition: "Any order", note: "Applies to 1 item only. If you buy 2, only 1 gets 10% off and the other stays at the regular price." },
+  { code: "BUY3SAVE10", percent: 10, minQty: 3, title: "10% off", condition: "Buy 3 or more of the same item", note: "Needs 3 or more of the same item, but only 1 item gets 10% off, even if you buy 6." },
+  { code: "BUY5SAVE15", percent: 15, minQty: 5, title: "15% off", condition: "Buy 5 or more of the same item", note: "Needs 5 or more of the same item, but only 1 item gets 15% off, even if you buy 10." },
+  { code: "SERUM15", percent: 15, category: "Serum", title: "15% off", condition: "Serum products only", note: "Serum products only. Only 1 item gets 15% off." },
+  { code: "SPF12", percent: 12, category: "Sunscreen", title: "12% off", condition: "Sunscreen products only", note: "Sunscreen products only. Only 1 item gets 12% off." },
+  { code: "BIG20", percent: 20, minOrder: 60, title: "20% off", condition: "Minimum order $60.00", note: "Needs an order of $60.00 or more, but only 1 item gets 20% off." },
+  { code: "LUXE25", percent: 25, minOrder: 120, title: "25% off", condition: "Minimum order $120.00", note: "Needs an order of $120.00 or more, but only 1 item gets 25% off." },
 ];
-const VOUCHER_RULE = "Only one voucher can be applied per order. Discounts are fixed percentages: they never stack and never grow with quantity.";
+const VOUCHER_RULE = "Only one voucher can be applied per order. Each voucher discounts a single item only; every other item stays at the regular price.";
 
 // null when the voucher can be used, otherwise the reason it cannot
 function checkVoucher(v: Voucher, p: Product, subtotal: number, qty: number, currency: string): string | null {
@@ -646,7 +646,7 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
 
   const price = p.price * (p.sizes.indexOf(size) > 0 ? 1.7 : 1);
   const subtotal = Math.round(price * qty * 100) / 100;
-  const discount = applied ? Math.round(subtotal * applied.percent) / 100 : 0;
+  const discount = applied ? Math.round(price * applied.percent) / 100 : 0;
   const total = Math.round((subtotal - discount) * 100) / 100;
   const payLabel = paying ? "Processing..." : `Pay ${currency}${total.toFixed(2)}`;
   const add = () => {
