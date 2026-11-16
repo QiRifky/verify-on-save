@@ -11,7 +11,7 @@
  *
  * Motion follows Apple's fluid-interface rules: critically damped springs, symmetric enter and exit,
  * velocity handed off on release, and a cross-fade under prefers-reduced-motion.
- * Modified for the Verify-on-save demo: Add to Bag became a Pay button with a payment receipt.
+ * Modified for the Verify-on-save demo: Pay button, payment receipt, promo codes and vouchers.
  */
 "use client";
 
@@ -479,6 +479,36 @@ export type ProductShelfProps = {
 const SPRING = { type: "spring" as const, bounce: 0, duration: 0.55 };
 const INK = "#111111";
 
+type Voucher = { code: string; percent: number; category?: string; minOrder?: number; title: string; condition: string };
+const VOUCHERS: Voucher[] = [
+  { code: "WELCOME10", percent: 10, title: "10% off", condition: "Any order" },
+  { code: "SERUM15", percent: 15, category: "Serum", title: "15% off", condition: "Serum products only" },
+  { code: "BIG20", percent: 20, minOrder: 60, title: "20% off", condition: "Minimum order $60.00" },
+];
+
+// null when the voucher can be used, otherwise the reason it cannot
+function checkVoucher(v: Voucher, p: Product, subtotal: number, currency: string): string | null {
+  if (v.category && p.category !== v.category) return "Serum products only";
+  if (v.minOrder && subtotal < v.minOrder) return "minimum order " + currency + v.minOrder.toFixed(2);
+  return null;
+}
+
+function copyText(text: string) {
+  const fallback = () => {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch { /* ignore */ }
+    document.body.removeChild(ta);
+  };
+  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).catch(fallback);
+  else fallback();
+}
+
 export function ProductShelf({ products = DEFAULT_PRODUCTS, currency = "$", className, children }: ProductShelfProps) {
   const [openId, setOpenId] = useState(null as string | null);
   const [bag, setBag] = useState(0);
@@ -588,6 +618,14 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
   const [receipt, setReceipt] = useState(null as { order: string; date: string } | null);
   const doneRef = useRef(null as HTMLButtonElement | null);
   const payTimer = useRef(0);
+  const [promo, setPromo] = useState("");
+  const [applied, setApplied] = useState(null as Voucher | null);
+  const [promoMsg, setPromoMsg] = useState(null as { text: string; ok: boolean } | null);
+  const [vouchersOpen, setVouchersOpen] = useState(false);
+  const [copied, setCopied] = useState(null as string | null);
+  const vouchersBtnRef = useRef(null as HTMLButtonElement | null);
+  const vouchersCloseRef = useRef(null as HTMLButtonElement | null);
+  const copyTimer = useRef(0);
   const [section, setSection] = useState("Details" as string | null);
   const closeRef = useRef(null as HTMLButtonElement | null);
   const drag = useRef(null as { x: number; v: number; samples: { x: number; t: number }[] } | null);
@@ -601,7 +639,9 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
   }, [spin, reduce]);
 
   const price = p.price * (p.sizes.indexOf(size) > 0 ? 1.7 : 1);
-  const total = price * qty;
+  const subtotal = Math.round(price * qty * 100) / 100;
+  const discount = applied ? Math.round(subtotal * applied.percent) / 100 : 0;
+  const total = Math.round((subtotal - discount) * 100) / 100;
   const payLabel = paying ? "Processing..." : `Pay ${currency}${total.toFixed(2)}`;
   const add = () => {
     if (paying) return;
@@ -616,7 +656,52 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
       });
     }, 900);
   };
-  useEffect(() => () => window.clearTimeout(payTimer.current), []);
+  useEffect(() => () => { window.clearTimeout(payTimer.current); window.clearTimeout(copyTimer.current); }, []);
+
+  const applyPromo = () => {
+    const code = promo.trim().toUpperCase();
+    if (!code) return setPromoMsg({ text: "Enter a promo code", ok: false });
+    const v = VOUCHERS.find((x) => x.code === code);
+    if (!v) return setPromoMsg({ text: "Invalid promo code", ok: false });
+    const reason = checkVoucher(v, p, subtotal, currency);
+    if (reason) return setPromoMsg({ text: "Promo code not eligible: " + reason, ok: false });
+    setApplied(v);
+    setPromoMsg({ text: "Promo " + v.code + " applied: " + v.percent + "% off", ok: true });
+  };
+  const removePromo = () => { setApplied(null); setPromoMsg(null); };
+
+  // re-check the applied voucher whenever the size or quantity changes
+  useEffect(() => {
+    if (!applied) return;
+    const reason = checkVoucher(applied, p, subtotal, currency);
+    if (reason) {
+      setPromoMsg({ text: "Promo " + applied.code + " removed: " + reason, ok: false });
+      setApplied(null);
+    }
+  }, [size, qty]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // vouchers dialog: focus Close; Escape closes only this dialog; focus returns to "My vouchers"
+  useEffect(() => {
+    if (!vouchersOpen) return;
+    vouchersCloseRef.current?.focus({ preventScroll: true });
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.stopImmediatePropagation();
+      e.stopPropagation();
+      setVouchersOpen(false);
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+      vouchersBtnRef.current?.focus({ preventScroll: true });
+    };
+  }, [vouchersOpen]);
+  const onCopy = (code: string) => {
+    copyText(code);
+    setCopied(code);
+    window.clearTimeout(copyTimer.current);
+    copyTimer.current = window.setTimeout(() => setCopied(null), 2000);
+  };
 
   // receipt: focus Done; Escape closes only the receipt (capture phase, so the shelf's window listener never sees it)
   useEffect(() => {
@@ -756,6 +841,53 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
             </div>
           </fieldset>
 
+          <div className="mt-7 flex flex-wrap items-stretch gap-2.5">
+            <input
+              type="text"
+              value={promo}
+              onChange={(e) => setPromo(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyPromo(); } }}
+              placeholder="Promo code"
+              aria-label="Promo code"
+              autoComplete="off"
+              className="h-12 min-w-[160px] flex-1 rounded-xl border border-[#d9d4cd] bg-white px-4 text-[15px] text-[#111111] placeholder:text-[#8f8982] focus-visible:border-[#111111] focus-visible:outline-2 focus-visible:outline-[#111111]"
+            />
+            <button
+              type="button"
+              onClick={applyPromo}
+              className="h-12 rounded-xl border border-[#d9d4cd] bg-white px-5 text-[15px] font-medium text-[#111111] transition-colors hover:border-[#8f8982] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111111]"
+            >
+              Apply
+            </button>
+            <button
+              ref={vouchersBtnRef}
+              type="button"
+              onClick={() => setVouchersOpen(true)}
+              aria-haspopup="dialog"
+              className="h-12 rounded-md px-2 text-[15px] text-[#111111] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-[#111111]"
+            >
+              My vouchers
+            </button>
+          </div>
+          {(promoMsg || applied) && (
+            <div className="mt-2 flex items-center gap-3 text-[14px]">
+              {promoMsg && <p aria-live="polite" className={promoMsg.ok ? "text-[#2f7a4b]" : "text-[#b3261e]"}>{promoMsg.text}</p>}
+              {applied && (
+                <button type="button" onClick={removePromo} className="rounded-md px-1 text-[13px] text-[#6f6a64] underline underline-offset-4 hover:text-[#111111] focus-visible:outline-2 focus-visible:outline-[#111111]">
+                  Remove
+                </button>
+              )}
+            </div>
+          )}
+
+          {applied && (
+            <dl className="mt-5 grid gap-1.5 text-[15px] tabular-nums">
+              <div className="flex justify-between gap-4"><dt className="text-[#6f6a64]">Subtotal:</dt><dd>{currency}{subtotal.toFixed(2)}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-[#6f6a64]">Discount:</dt><dd>-{currency}{discount.toFixed(2)}</dd></div>
+              <div className="flex justify-between gap-4 font-semibold"><dt>Total:</dt><dd>{currency}{total.toFixed(2)}</dd></div>
+            </dl>
+          )}
+
           <div className="mt-7 flex items-stretch gap-3">
             <div className="flex items-center rounded-xl border border-[#d9d4cd] bg-white">
               <button type="button" aria-label="Decrease quantity" onClick={() => setQty((q) => Math.max(1, q - 1))} className="grid h-full w-11 place-items-center rounded-l-xl text-[#111111] transition-colors active:bg-black/[0.06] disabled:text-[#d9d4cd]" disabled={qty === 1}>
@@ -811,6 +943,58 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
       </div>
 
       <AnimatePresence>
+        {vouchersOpen && (
+          <motion.div
+            key="vouchers"
+            className="fixed inset-0 z-50 grid place-items-center bg-[#f3f1ed]/70 p-5 backdrop-blur-md"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduce ? 0.15 : 0.25 }}
+            onClick={(e) => { if (e.target === e.currentTarget) setVouchersOpen(false); }}
+          >
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-label="My vouchers"
+              className="w-full max-w-[440px] rounded-[16px] border border-[#e6e1da] bg-white p-6 text-[#111111] shadow-[0_24px_60px_-20px_rgba(0,0,0,0.25)]"
+              initial={{ opacity: 0, y: reduce ? 0 : 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: reduce ? 0 : 16 }}
+              transition={reduce ? { duration: 0.15 } : SPRING}
+            >
+              <h3 className="text-[22px] font-semibold tracking-[-0.01em]">My vouchers</h3>
+              <p className="mt-1 text-[14px] text-[#6f6a64]">Copy a code, then paste it in the Promo code field.</p>
+              <ul className="mt-5 grid gap-3">
+                {VOUCHERS.map((v) => (
+                  <li key={v.code} className="flex items-center gap-3 rounded-xl border border-[#e6e1da] p-4">
+                    <div className="min-w-0 flex-1">
+                      <span className="inline-block rounded-md border border-dashed border-[#8f8982] px-2 py-0.5 text-[13px] font-semibold tracking-[0.04em]">{v.code}</span>
+                      <div className="mt-1.5 text-[16px] font-semibold">{v.title}</div>
+                      <div className="text-[14px] text-[#6f6a64]">{v.condition}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onCopy(v.code)}
+                      aria-label={"Copy " + v.code}
+                      className="h-10 min-w-[84px] rounded-[10px] border border-[#d9d4cd] bg-white px-4 text-[14px] font-medium transition-colors hover:border-[#8f8982] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111111]"
+                    >
+                      {copied === v.code ? "Copied" : "Copy"}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <button
+                ref={vouchersCloseRef}
+                type="button"
+                onClick={() => setVouchersOpen(false)}
+                className="mt-5 h-12 w-full rounded-[10px] bg-[#111111] text-[16px] font-medium text-white transition-colors hover:bg-[#000000] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111111]"
+              >
+                Close
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
         {receipt && (
           <motion.div
             key="receipt"
@@ -845,6 +1029,7 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
                   ["Quantity:", String(qty)],
                   ["Unit price:", `${currency}${price.toFixed(2)}`],
                   ["Delivery:", "Free"],
+                  ...(applied ? [["Promo:", applied.code], ["Discount:", `-${currency}${discount.toFixed(2)}`]] as const : []),
                 ] as const).map(([k, v]) => (
                   <div key={k} className="flex justify-between gap-4">
                     <dt className="text-[#6f6a64]">{k}</dt>
