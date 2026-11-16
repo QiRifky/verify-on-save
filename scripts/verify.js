@@ -24,8 +24,8 @@ const FLOWS = [
     objective: `Go to ${APP_URL}, click the Barrier Restore Cream product, click the 'Increase quantity' button once, type 'WELCOME10' into the 'Promo code' field, click 'Apply', confirm the text 'Promo WELCOME10 applied: 10% off' and that the pay button reads 'Pay $55.10', then click the pay button and confirm the receipt shows 'Discount: -$2.90' and 'Total paid: $55.10'`,
   },
   {
-    name: "promo-min-order",
-    objective: `Go to ${APP_URL}, click the glazing milk product on the shelf, click the 'Increase quantity' button once so the quantity is 2, type 'BIG20' into the 'Promo code' field, click 'Apply', and confirm the text 'Promo BIG20 applied: 20% off' and that the pay button reads 'Pay $48.00'`,
+    name: "promo-flat-120",
+    objective: `Go to ${APP_URL}, click the glazing milk product on the shelf, click the 'Increase quantity' button 3 times so the quantity is 4, type 'SAVE20' into the 'Promo code' field, click 'Apply', and confirm the text 'Promo SAVE20 applied: $20.00 off' and that the pay button reads 'Pay $100.00'`,
   },
   {
     name: "promo-invalid",
