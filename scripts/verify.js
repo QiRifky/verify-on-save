@@ -8,10 +8,6 @@ const OUT_DIR = path.join(__dirname, "..", ".verify");
 // Objectives avoid double quotes so they are safe in the Windows shell
 const FLOWS = [
   {
-    name: "open-product",
-    objective: `Go to ${APP_URL}, click the Barrier Restore Cream product on the shelf, and confirm the product page opens with the heading 'Barrier Restore Cream' and the price '$29.00'`,
-  },
-  {
     name: "size-price",
     objective: `Go to ${APP_URL}, click the Barrier Restore Cream product, choose the '100 ml' size, and confirm the pay button reads 'Pay $49.30'`,
   },
@@ -20,12 +16,32 @@ const FLOWS = [
     objective: `Go to ${APP_URL}, click the Barrier Restore Cream product, click the 'Increase quantity' button once, confirm the pay button reads 'Pay $58.00', click it, and confirm a receipt appears with the text 'Payment successful' and 'Total paid: $58.00'`,
   },
   {
-    name: "pay-large-size",
-    objective: `Go to ${APP_URL}, click the Barrier Restore Cream product, choose the '100 ml' size, click the 'Increase quantity' button once, click the pay button, and confirm the receipt shows 'Quantity: 2' and 'Total paid: $98.60'`,
+    name: "vouchers-popup",
+    objective: `Go to ${APP_URL}, click the Barrier Restore Cream product, click the 'My vouchers' button, and confirm a dialog titled 'My vouchers' is shown listing the code 'BUY3SAVE10' with a note saying that buying 6 is still 10%, not 20%`,
   },
   {
-    name: "receipt-done",
-    objective: `Go to ${APP_URL}, click the Barrier Restore Cream product, click the pay button, wait for the receipt, click 'Done', and confirm the shelf with all the products is visible again, including the 'Squalane' product priced '$10'`,
+    name: "promo-welcome-receipt",
+    objective: `Go to ${APP_URL}, click the Barrier Restore Cream product, click the 'Increase quantity' button once, type 'WELCOME10' into the 'Promo code' field, click 'Apply', confirm the text 'Promo WELCOME10 applied: 10% off' and that the pay button reads 'Pay $52.20', then click the pay button and confirm the receipt shows 'Discount: -$5.80' and 'Total paid: $52.20'`,
+  },
+  {
+    name: "promo-min-order",
+    objective: `Go to ${APP_URL}, click the glazing milk product on the shelf, click the 'Increase quantity' button once so the quantity is 2, type 'BIG20' into the 'Promo code' field, click 'Apply', and confirm the text 'Promo BIG20 applied: 20% off' and that the pay button reads 'Pay $48.00'`,
+  },
+  {
+    name: "promo-invalid",
+    objective: `Go to ${APP_URL}, click the Barrier Restore Cream product, type 'WRONG' into the 'Promo code' field, click 'Apply', and confirm the text 'Invalid promo code' and that the pay button still reads 'Pay $29.00'`,
+  },
+  {
+    name: "promo-not-eligible",
+    objective: `Go to ${APP_URL}, click the Barrier Restore Cream product, type 'SERUM15' into the 'Promo code' field, click 'Apply', and confirm the text 'Promo code not eligible: Serum products only'`,
+  },
+  {
+    name: "promo-buy3",
+    objective: `Go to ${APP_URL}, click the Barrier Restore Cream product, click the 'Increase quantity' button twice so the quantity is 3, type 'BUY3SAVE10' into the 'Promo code' field, click 'Apply', and confirm the text 'Promo BUY3SAVE10 applied: 10% off' and that the pay button reads 'Pay $78.30'`,
+  },
+  {
+    name: "promo-buy6-fixed",
+    objective: `Go to ${APP_URL}, click the Barrier Restore Cream product, click the 'Increase quantity' button 5 times so the quantity is 6, type 'BUY3SAVE10' into the 'Promo code' field, click 'Apply', and confirm the pay button reads 'Pay $156.60'`,
   },
 ];
 

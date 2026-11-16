@@ -479,16 +479,22 @@ export type ProductShelfProps = {
 const SPRING = { type: "spring" as const, bounce: 0, duration: 0.55 };
 const INK = "#111111";
 
-type Voucher = { code: string; percent: number; category?: string; minOrder?: number; title: string; condition: string };
+type Voucher = { code: string; percent: number; category?: string; minOrder?: number; minQty?: number; title: string; condition: string; note?: string };
 const VOUCHERS: Voucher[] = [
-  { code: "WELCOME10", percent: 10, title: "10% off", condition: "Any order" },
-  { code: "SERUM15", percent: 15, category: "Serum", title: "15% off", condition: "Serum products only" },
-  { code: "BIG20", percent: 20, minOrder: 60, title: "20% off", condition: "Minimum order $60.00" },
+  { code: "WELCOME10", percent: 10, title: "10% off", condition: "Any order", note: "Fixed 10% off. One code per order." },
+  { code: "BUY3SAVE10", percent: 10, minQty: 3, title: "10% off", condition: "Buy 3 or more of the same item", note: "The discount stays 10%: buying 6 is still 10%, not 20%." },
+  { code: "BUY5SAVE15", percent: 15, minQty: 5, title: "15% off", condition: "Buy 5 or more of the same item", note: "The discount stays 15% however many you buy." },
+  { code: "SERUM15", percent: 15, category: "Serum", title: "15% off", condition: "Serum products only", note: "Fixed 15% off the whole order, not per item." },
+  { code: "SPF12", percent: 12, category: "Sunscreen", title: "12% off", condition: "Sunscreen products only", note: "Fixed 12% off the whole order, not per item." },
+  { code: "BIG20", percent: 20, minOrder: 60, title: "20% off", condition: "Minimum order $60.00", note: "Fixed 20% off: a bigger order does not earn a bigger discount." },
+  { code: "LUXE25", percent: 25, minOrder: 120, title: "25% off", condition: "Minimum order $120.00", note: "Fixed 25% off, the largest discount available." },
 ];
+const VOUCHER_RULE = "Only one voucher can be applied per order. Discounts are fixed percentages: they never stack and never grow with quantity.";
 
 // null when the voucher can be used, otherwise the reason it cannot
-function checkVoucher(v: Voucher, p: Product, subtotal: number, currency: string): string | null {
-  if (v.category && p.category !== v.category) return "Serum products only";
+function checkVoucher(v: Voucher, p: Product, subtotal: number, qty: number, currency: string): string | null {
+  if (v.category && p.category !== v.category) return v.category + " products only";
+  if (v.minQty && qty < v.minQty) return "buy at least " + v.minQty + " items";
   if (v.minOrder && subtotal < v.minOrder) return "minimum order " + currency + v.minOrder.toFixed(2);
   return null;
 }
@@ -663,7 +669,7 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
     if (!code) return setPromoMsg({ text: "Enter a promo code", ok: false });
     const v = VOUCHERS.find((x) => x.code === code);
     if (!v) return setPromoMsg({ text: "Invalid promo code", ok: false });
-    const reason = checkVoucher(v, p, subtotal, currency);
+    const reason = checkVoucher(v, p, subtotal, qty, currency);
     if (reason) return setPromoMsg({ text: "Promo code not eligible: " + reason, ok: false });
     setApplied(v);
     setPromoMsg({ text: "Promo " + v.code + " applied: " + v.percent + "% off", ok: true });
@@ -673,7 +679,7 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
   // re-check the applied voucher whenever the size or quantity changes
   useEffect(() => {
     if (!applied) return;
-    const reason = checkVoucher(applied, p, subtotal, currency);
+    const reason = checkVoucher(applied, p, subtotal, qty, currency);
     if (reason) {
       setPromoMsg({ text: "Promo " + applied.code + " removed: " + reason, ok: false });
       setApplied(null);
@@ -957,7 +963,7 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
               role="dialog"
               aria-modal="true"
               aria-label="My vouchers"
-              className="w-full max-w-[440px] rounded-[16px] border border-[#e6e1da] bg-white p-6 text-[#111111] shadow-[0_24px_60px_-20px_rgba(0,0,0,0.25)]"
+              className="flex max-h-[85vh] w-full max-w-[440px] flex-col rounded-[16px] border border-[#e6e1da] bg-white p-6 text-[#111111] shadow-[0_24px_60px_-20px_rgba(0,0,0,0.25)]"
               initial={{ opacity: 0, y: reduce ? 0 : 16 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: reduce ? 0 : 16 }}
@@ -965,13 +971,15 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
             >
               <h3 className="text-[22px] font-semibold tracking-[-0.01em]">My vouchers</h3>
               <p className="mt-1 text-[14px] text-[#6f6a64]">Copy a code, then paste it in the Promo code field.</p>
-              <ul className="mt-5 grid gap-3">
+              <p className="mt-1 text-[13px] text-[#6f6a64]">{VOUCHER_RULE}</p>
+              <ul className="mt-5 grid min-h-0 flex-1 gap-3 overflow-y-auto">
                 {VOUCHERS.map((v) => (
                   <li key={v.code} className="flex items-center gap-3 rounded-xl border border-[#e6e1da] p-4">
                     <div className="min-w-0 flex-1">
                       <span className="inline-block rounded-md border border-dashed border-[#8f8982] px-2 py-0.5 text-[13px] font-semibold tracking-[0.04em]">{v.code}</span>
                       <div className="mt-1.5 text-[16px] font-semibold">{v.title}</div>
                       <div className="text-[14px] text-[#6f6a64]">{v.condition}</div>
+                      {v.note && <div className="mt-1 text-[12px] text-[#8f8982]">Note: {v.note}</div>}
                     </div>
                     <button
                       type="button"

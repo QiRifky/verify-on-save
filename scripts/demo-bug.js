@@ -1,7 +1,7 @@
 const fs = require("fs");
 const file = "src/components/ui/skincare-product-shelf.tsx";
-const good = "const total = price * qty;";
-const bad = "const total = price;";
+const good = "qty < v.minQty";
+const bad = "qty <= v.minQty";
 const src = fs.readFileSync(file, "utf8");
 if (!src.includes(good)) {
   console.log("Line not found or bug already injected.");
