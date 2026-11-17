@@ -7,7 +7,7 @@ Built for the KaneCLI Online Hackathon with Kiro.
 The demo app is **Skasman**, a small skincare shop: a product shelf, size and quantity pickers, a price summary, a pay button with a receipt, and a "My vouchers" popup with promo-code rules. Voucher math is exactly the kind of logic where a one-character bug looks fine at a glance.
 
 ## How it works
-
+![Workflow](docs/verify-on-save-swimlane.png)
 1. The agent (Kiro) edits the app.
 2. A steering rule tells it to run `node scripts/verify.js`.
 3. The script runs plain-English Kane flows against `http://127.0.0.1:3000` and writes `.verify/last-result.json`.
