@@ -79,5 +79,7 @@ See `docs/example-failed-result.json` for a real failed run.
 - `scripts/package.json` sets `"type": "commonjs"` so the scripts run even though the app's own `package.json` uses ES modules.
 - Each Kane run consumes credits, so the hook is limited to source files.
 
+Live demo: https://verify-on-save.vercel.app/
+
 ## Demo video
 https://youtu.be/0ELXQwoe02Y
