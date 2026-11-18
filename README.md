@@ -80,5 +80,4 @@ See `docs/example-failed-result.json` for a real failed run.
 - Each Kane run consumes credits, so the hook is limited to source files.
 
 ## Demo video
-
-(YouTube link here)
+https://youtu.be/0ELXQwoe02Y
