@@ -1,9 +1,18 @@
-const { spawn } = require("child_process");
+const { spawn, execFileSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
 const APP_URL = process.env.APP_URL || "http://127.0.0.1:3000";
 const OUT_DIR = path.join(__dirname, "..", ".verify");
+
+// Runs a git command and returns its output, or null if git is unavailable
+function git(args) {
+  try {
+    return execFileSync("git", args, { encoding: "utf8" }).trim();
+  } catch (e) {
+    return null;
+  }
+}
 
 // A "passed" run whose summary says the task was not completed is not trusted
 const DOUBT =
@@ -21,7 +30,7 @@ const FLOWS = [
   },
   {
     name: "price-summary",
-        objective: `Go to ${APP_URL}, click the Barrier Restore Cream product, and confirm the page shows the rows 'Subtotal' $29.00, 'Discount' $0.00, 'Shipping' Free and 'Total' $29.00`,
+    objective: `Go to ${APP_URL}, click the Barrier Restore Cream product, and confirm the page shows the rows 'Subtotal' $29.00, 'Discount' $0.00, 'Shipping' Free and 'Total' $29.00`,
   },
   {
     name: "vouchers-popup",
@@ -104,7 +113,16 @@ function runKane(flow) {
     results.push(await runKane(flow));
   }
   const allPassed = results.every((r) => r.status === "passed");
-  const report = { overall: allPassed ? "passed" : "failed", results };
+  // .verify is excluded because last-result.json itself is tracked by git
+  const status = git(["status", "--porcelain", "--", ".", ":(exclude).verify"]);
+  const report = {
+    overall: allPassed ? "passed" : "failed",
+    commit: git(["rev-parse", "--short", "HEAD"]),
+    dirty: status === null ? null : status !== "",
+    ran: flows.map((f) => f.name),
+    fullSuite: flows.length === FLOWS.length,
+    results,
+  };
   fs.writeFileSync(
     path.join(OUT_DIR, "last-result.json"),
     JSON.stringify(report, null, 2)
@@ -112,5 +130,9 @@ function runKane(flow) {
   for (const r of results) {
     console.log(`[${r.status.toUpperCase()}] ${r.flow}: ${r.summary || r.reason}`);
   }
+  console.log(
+    `Ran ${flows.length} of ${FLOWS.length} flows` +
+      (flows.length === FLOWS.length ? "" : " (partial run, not full coverage)")
+  );
   process.exit(allPassed ? 0 : 1);
 })();
