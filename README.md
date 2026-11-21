@@ -10,7 +10,7 @@ The demo app is **Skasman**, a small skincare shop: a product shelf, size and qu
 ![Workflow](docs/verify-on-save-swimlane.png)
 1. The agent (Kiro) edits the app.
 2. A steering rule tells it to run `node scripts/verify.js`.
-3. The script runs plain-English Kane flows against `http://127.0.0.1:3000` and writes `.verify/last-result.json`.
+3. The script runs plain-English Kane flows against `http://127.0.0.1:3000` and writes `.verify/last-result.json`, which also records the tested commit, whether the working tree was dirty, which flows ran, and whether it was the full suite.
 4. If a flow fails, the agent reads Kane's `reason_code` and `summary`, fixes the cause, and re-runs (max 5 cycles).
 5. It may report "done" only after a passing result.
 
@@ -61,7 +61,7 @@ Open the folder in Kiro and ask it to change something. The steering file `.kiro
 
 The voucher BUY3SAVE10 promises "Buy 3 or more". `scripts/demo-bug.js` changes one comparison in `src/components/ui/skincare-product-shelf.tsx` (`qty < v.minQty` becomes `qty <= v.minQty`). The app still looks normal, and buying 6 still works, but a customer who buys exactly 3 is wrongly rejected.
 
-Only the `promo-buy3` flow fails. Kane reports `assertion_error.confirmed_product_bug`, Kiro reads the report, changes the line back, re-runs, and the flow passes with Pay $78.30.
+Only the `promo-buy3` flow fails. Kane reports an `assertion_error`, Kiro reads the report, changes the line back, re-runs, and the flow passes with Pay $78.30.
 
 ```bash
 node scripts/demo-bug.js                                        # inject the bug
