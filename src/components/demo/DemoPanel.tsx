@@ -4,10 +4,8 @@
  */
 import { useRef, useState, type KeyboardEvent } from "react";
 import { BUGS, useBugs, type BugId } from "@/lib/bugs";
-import recordedRaw from "@/data/recorded-runs.json";
-
-type Recorded = { flow: string; status: string; reason_code: string; summary: string; time: string };
-const RECORDED = recordedRaw as Partial<Record<BugId, Recorded>>;
+import { RECORDED } from "@/data/recorded";
+import { FixRunView } from "@/components/demo/FixRunView";
 
 const REPO_URL = "https://github.com/QiRifky/verify-on-save";
 const VIDEO_URL = "https://youtu.be/0ELXQwoe02Y";
@@ -94,7 +92,16 @@ function RecordedLine({ id }: { id: BugId }) {
   );
 }
 
-function PlantTab() {
+type PlantTabProps = {
+  fixed: Set<BugId>;
+  onToggle: (id: BugId) => void;
+  onReset: () => void;
+  onFix: (id: BugId) => void;
+  /** Lets the panel return focus to a row's controls when the run view closes. */
+  setRef: (key: string, el: HTMLButtonElement | null) => void;
+};
+
+function PlantTab({ fixed, onToggle, onReset, onFix, setRef }: PlantTabProps) {
   const bugs = useBugs();
   return (
     <div>
@@ -104,7 +111,7 @@ function PlantTab() {
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <button
           type="button"
-          onClick={bugs.reset}
+          onClick={onReset}
           disabled={bugs.active.length === 0}
           className={`rounded-md border border-[#2f333b] bg-[#14161a] px-3 py-1.5 text-[13px] text-[#e8eaed] hover:border-[#5a606b] disabled:cursor-not-allowed disabled:text-[#6b717b] ${FOCUS}`}
         >
@@ -127,18 +134,32 @@ function PlantTab() {
                     <span className={`font-mono text-[13px] font-semibold ${on ? CORAL : "text-[#e8eaed]"}`}>{b.id}</span>
                     <span id={labelId} className="text-[14px] leading-snug text-[#e8eaed]">{b.title}</span>
                   </div>
-                  <p className="mt-2">
+                  <p className="mt-2 flex flex-wrap items-center gap-2">
                     <span className="inline-block rounded-full border border-[#2ecc71]/40 bg-[#2ecc71]/10 px-2.5 py-0.5 text-[12px] text-[#2ecc71]">
-                      caught by <span className="font-mono">{b.flow}</span>
+                      {RECORDED[b.id] ? "caught by" : "expected to be caught by"} <span className="font-mono">{b.flow}</span>
                     </span>
+                    {fixed.has(b.id) && !on && (
+                      <span className="inline-block rounded-full border border-[#2ecc71] px-2.5 py-0.5 text-[12px] font-semibold text-[#2ecc71]">Fixed</span>
+                    )}
                   </p>
+                  {on && (
+                    <button
+                      ref={(el) => setRef(`fix-${b.id}`, el)}
+                      type="button"
+                      onClick={() => onFix(b.id)}
+                      className={`mt-2.5 rounded-md border border-[#2f333b] bg-[#14161a] px-3 py-1.5 text-[13px] text-[#e8eaed] hover:border-[#5a606b] ${FOCUS}`}
+                    >
+                      Fix with Kiro + Kane
+                    </button>
+                  )}
                 </div>
                 <button
+                  ref={(el) => setRef(`toggle-${b.id}`, el)}
                   type="button"
                   role="switch"
                   aria-checked={on}
                   aria-labelledby={labelId}
-                  onClick={() => bugs.toggle(b.id)}
+                  onClick={() => onToggle(b.id)}
                   className={`relative mt-0.5 h-7 w-12 shrink-0 rounded-full border transition-colors ${FOCUS} ${on ? "border-[#ff6b5b] bg-[#ff6b5b]" : "border-[#3a3f48] bg-[#1d2026]"}`}
                 >
                   <span aria-hidden className={`absolute top-0.5 left-0.5 size-5 rounded-full bg-white transition-transform ${on ? "translate-x-5" : ""}`} />
@@ -198,6 +219,24 @@ export function DemoPanel() {
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("plant");
   const refs = useRef<Record<string, HTMLButtonElement | null>>({});
 
+  // fix run view: which bug is open, and which bugs were switched off by a finished run
+  const [runId, setRunId] = useState<BugId | null>(null);
+  const [fixed, setFixed] = useState<Set<BugId>>(() => new Set());
+  const rowRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const setRowRef = (key: string, el: HTMLButtonElement | null) => { rowRefs.current[key] = el; };
+  const unfix = (id: BugId) => setFixed((s) => { const n = new Set(s); n.delete(id); return n; });
+
+  const closeRun = () => {
+    const id = runId;
+    setRunId(null);
+    if (!id) return;
+    // back to the row: the fix button if it is still there, otherwise the row's toggle
+    window.requestAnimationFrame(() => {
+      const fixBtn = rowRefs.current[`fix-${id}`];
+      (fixBtn?.isConnected ? fixBtn : rowRefs.current[`toggle-${id}`])?.focus();
+    });
+  };
+
   const onKey = (e: KeyboardEvent<HTMLButtonElement>) => {
     if (e.key !== "ArrowRight" && e.key !== "ArrowLeft" && e.key !== "Home" && e.key !== "End") return;
     e.preventDefault();
@@ -208,7 +247,7 @@ export function DemoPanel() {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[#0a0b0d] text-[#e8eaed]">
+    <div className="relative flex h-full min-h-0 flex-col bg-[#0a0b0d] text-[#e8eaed]">
       <header className="shrink-0 border-b border-[#24272d] px-5 pt-5 pb-0">
         <div className="flex items-start justify-between gap-4">
           <h1 className="text-[18px] leading-snug font-semibold tracking-[-0.01em]">Plant a bug, then see which check catches it</h1>
@@ -246,8 +285,26 @@ export function DemoPanel() {
         tabIndex={0}
         className={`min-h-0 flex-1 overflow-y-auto px-5 py-5 ${FOCUS}`}
       >
-        {tab === "plant" ? <PlantTab /> : <HowTab />}
+        {tab === "plant" ? (
+          <PlantTab
+            fixed={fixed}
+            onToggle={(id) => { unfix(id); bugs.toggle(id); }}
+            onReset={() => { setFixed(new Set()); bugs.reset(); }}
+            onFix={setRunId}
+            setRef={setRowRef}
+          />
+        ) : (
+          <HowTab />
+        )}
       </div>
+      {runId && (
+        <FixRunView
+          key={runId}
+          bug={BUGS.find((b) => b.id === runId)!}
+          onFixed={() => { bugs.off(runId); setFixed((s) => new Set(s).add(runId)); }}
+          onClose={closeRun}
+        />
+      )}
     </div>
   );
 }

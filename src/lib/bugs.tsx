@@ -58,6 +58,8 @@ export type BugsApi = {
   key: string;
   on: (id: BugId) => boolean;
   toggle: (id: BugId) => void;
+  /** Switch one bug off (used when a fix run finishes). */
+  off: (id: BugId) => void;
   reset: () => void;
   link: () => string;
 };
@@ -67,6 +69,7 @@ const OFF: BugsApi = {
   key: "",
   on: () => false,
   toggle: () => {},
+  off: () => {},
   reset: () => {},
   link: () => "",
 };
@@ -89,6 +92,7 @@ export function BugsProvider({ children }: { children: ReactNode }) {
       return BUGS.map((b) => b.id).filter((x) => next.has(x));
     });
   }, []);
+  const off = useCallback((id: BugId) => setActive((cur) => cur.filter((x) => x !== id)), []);
   const reset = useCallback(() => setActive([]), []);
 
   const api = useMemo<BugsApi>(() => {
@@ -98,10 +102,11 @@ export function BugsProvider({ children }: { children: ReactNode }) {
       key: active.join(","),
       on: (id) => set.has(id),
       toggle,
+      off,
       reset,
       link: () => urlWith(active),
     };
-  }, [active, toggle, reset]);
+  }, [active, toggle, off, reset]);
 
   return <BugsContext.Provider value={api}>{children}</BugsContext.Provider>;
 }
