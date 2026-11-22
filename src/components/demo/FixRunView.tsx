@@ -6,6 +6,8 @@ import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 
 import type { BugDef } from "@/lib/bugs";
 import { BUG_FIXES, type BugFix } from "@/data/bug-fixes";
 import { RECORDED, verdictOf, type Recorded } from "@/data/recorded";
+import { CodeBlock, CodeBlockCode, CodeBlockGroup } from "@/components/ui/code-block";
+import { BTN } from "@/components/demo/shared";
 
 type NodeId = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8B" | "8A";
 type Kind = "note" | "cmd" | "out" | "fail" | "pass" | "meta" | "del" | "add";
@@ -25,18 +27,15 @@ const NODES: { id: NodeId; label: string }[] = [
 const LABEL = Object.fromEntries(NODES.map((n) => [n.id, n.label])) as Record<NodeId, string>;
 
 const KIND_CLASS: Record<Kind, string> = {
-  note: "text-[#8b919b]",
-  cmd: "text-[#e8eaed]",
-  out: "text-[#c5cad2]",
-  fail: "text-[#ff6b5b] font-semibold",
-  pass: "text-[#2ecc71] font-semibold",
-  meta: "text-[#8b919b]",
-  del: "bg-[#ff6b5b]/15 text-[#ff6b5b]",
-  add: "bg-[#2ecc71]/15 text-[#2ecc71]",
+  note: "text-(--vos-dk-muted)",
+  cmd: "text-(--vos-dk-text)",
+  out: "text-(--vos-dk-soft)",
+  fail: "text-(--vos-dk-coral) font-semibold",
+  pass: "text-(--vos-dk-green) font-semibold",
+  meta: "text-(--vos-dk-muted)",
+  del: "bg-(--vos-dk-coral)/15 text-(--vos-dk-coral)",
+  add: "bg-(--vos-dk-green)/15 text-(--vos-dk-green)",
 };
-
-const FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8ecbff]";
-const BTN = `rounded-md border border-[#2f333b] bg-[#14161a] px-3 py-1.5 text-[13px] text-[#e8eaed] hover:border-[#5a606b] ${FOCUS}`;
 
 /** The whole loop as a flat list of lines to type, in order. */
 function buildEvents(flow: string, fix: BugFix, recorded: boolean): Ev[] {
@@ -65,32 +64,32 @@ function buildEvents(flow: string, fix: BugFix, recorded: boolean): Ev[] {
 function ReportCard({ bug, fix, rec }: { bug: BugDef; fix: BugFix; rec?: Recorded }) {
   if (rec) {
     const verdict = verdictOf(rec);
-    const color = verdict === "caught" ? "text-[#2ecc71]" : verdict === "slipped" ? "text-[#ff6b5b]" : "text-[#c5cad2]";
+    const color = verdict === "caught" ? "text-(--vos-green)" : verdict === "slipped" ? "text-(--vos-coral)" : "text-(--vos-soft)";
     return (
-      <div className="rounded-md border border-[#24272d] bg-[#0a0b0d] p-3 text-[12px] leading-relaxed">
-        <p className="text-[#8b919b]">Recorded Kane run, from before the fix</p>
+      <div className="rounded-md border border-(--vos-line) bg-(--vos-subtle) p-3 text-[12px] leading-relaxed">
+        <p className="text-(--vos-muted)">Recorded Kane run, from before the fix</p>
         <p className="mt-1">
           <span className={`font-semibold ${color}`}>{verdict ?? rec.status}</span>
-          <span className="text-[#8b919b]"> · flow </span>
-          <span className="font-mono text-[#e8eaed]">{rec.flow}</span>
-          <span className="text-[#8b919b]"> · status </span>
-          <span className="font-mono text-[#e8eaed]">{rec.status}</span>
+          <span className="text-(--vos-muted)"> · flow </span>
+          <span className="font-mono text-(--vos-text)">{rec.flow}</span>
+          <span className="text-(--vos-muted)"> · status </span>
+          <span className="font-mono text-(--vos-text)">{rec.status}</span>
         </p>
-        <p className="font-mono break-all text-[#c5cad2]">{rec.reason_code}</p>
-        <p className="mt-1 text-[#c5cad2]">{rec.summary}</p>
-        <p className="mt-1 font-mono text-[#8b919b]">{rec.time.slice(0, 16).replace("T", " ")} UTC</p>
+        <p className="font-mono break-all text-(--vos-soft)">{rec.reason_code}</p>
+        <p className="mt-1 text-(--vos-soft)">{rec.summary}</p>
+        <p className="mt-1 font-mono text-(--vos-muted)">{rec.time.slice(0, 16).replace("T", " ")} UTC</p>
       </div>
     );
   }
   return (
-    <div className="rounded-md border border-dashed border-[#3a3f48] bg-[#0a0b0d] p-3 text-[12px] leading-relaxed">
-      <p className="font-semibold text-[#e8eaed]">Expected result, no recorded run yet</p>
-      <p className="mt-1 text-[#8b919b]">Flow</p>
-      <p className="font-mono text-[#e8eaed]">{bug.flow}</p>
-      <p className="mt-1 text-[#8b919b]">What the flow checks</p>
-      <p className="text-[#c5cad2]">{fix.checks}</p>
-      <p className="mt-1 text-[#8b919b]">What the shop does wrong</p>
-      <p className="text-[#c5cad2]">{fix.symptom}</p>
+    <div className="rounded-md border border-dashed border-(--vos-line-strong) bg-(--vos-subtle) p-3 text-[12px] leading-relaxed">
+      <p className="font-semibold text-(--vos-text)">Expected result, no recorded run yet</p>
+      <p className="mt-1 text-(--vos-muted)">Flow</p>
+      <p className="font-mono text-(--vos-text)">{bug.flow}</p>
+      <p className="mt-1 text-(--vos-muted)">What the flow checks</p>
+      <p className="text-(--vos-soft)">{fix.checks}</p>
+      <p className="mt-1 text-(--vos-muted)">What the shop does wrong</p>
+      <p className="text-(--vos-soft)">{fix.symptom}</p>
     </div>
   );
 }
@@ -195,21 +194,29 @@ export function FixRunView({ bug, onFixed, onClose }: { bug: BugDef; onFixed: ()
       return <div key={i} className={`whitespace-pre-wrap break-words ${KIND_CLASS[ev.kind]}`}>{text || "\u00a0"}</div>;
     });
   const codeStarted = events.findIndex((e) => e.target === "code") <= at;
+  const lastCodeIdx = events.reduce((m, e, i) => (e.target === "code" ? i : m), -1);
+  // typed so far (plain text while typing; highlighted only once the last diff line is complete)
+  const diffText = events
+    .map((ev, i) => (ev.target === "code" ? shown(i, ev) : null))
+    .filter((t): t is string => t !== null)
+    .join("\n");
+  const diffTyped = at > lastCodeIdx;
+  const fullDiff = events.filter((e) => e.target === "code").map((e) => e.text).join("\n");
 
   return (
-    <div className="absolute inset-0 z-40 flex items-stretch justify-center bg-[#0a0b0d]/85 p-3" onKeyDown={onKeyDown}>
+    <div className="absolute inset-0 z-40 flex items-stretch justify-center bg-(--vos-text)/40 p-3" onKeyDown={onKeyDown}>
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="flex min-h-0 w-full max-w-[760px] flex-col rounded-lg border border-[#2f333b] bg-[#0f1114] text-[#e8eaed]"
+        className="flex min-h-0 w-full max-w-[760px] flex-col rounded-lg border border-(--vos-line-strong) bg-(--vos-raised) text-(--vos-text)"
       >
-        <div className="shrink-0 border-b border-[#24272d] px-4 py-3">
+        <div className="shrink-0 border-b border-(--vos-line) px-4 py-3">
           <h2 id={titleId} className="text-[15px] font-semibold">
             Fix <span className="font-mono">{bug.id}</span> with Kiro + Kane
           </h2>
-          <p className="mt-0.5 text-[12px] text-[#c5cad2]">Animated illustration. Kane does not run in your browser.</p>
+          <p className="mt-0.5 text-[12px] text-(--vos-soft)">Animated illustration. Kane does not run in your browser.</p>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
@@ -221,15 +228,15 @@ export function FixRunView({ bug, onFixed, onClose }: { bug: BugDef; onFixed: ()
             {NODES.map((n) => {
               const isCur = currentNode === n.id && !done;
               const seen = visited(n.id);
-              let tone = "border-[#2f333b] text-[#6b717b]";
-              if (seen) tone = "border-[#5a606b] text-[#e8eaed]";
-              if (n.id === "7" && seen) tone = passSeen ? "border-[#2ecc71] text-[#2ecc71]" : failSeen ? "border-[#ff6b5b] text-[#ff6b5b]" : tone;
-              if (n.id === "8A" && seen) tone = "border-[#2ecc71] text-[#2ecc71]";
+              let tone = "border-(--vos-line-strong) text-(--vos-muted)";
+              if (seen) tone = "border-(--vos-line-strong) text-(--vos-text)";
+              if (n.id === "7" && seen) tone = passSeen ? "border-(--vos-green) text-(--vos-green)" : failSeen ? "border-(--vos-coral) text-(--vos-coral)" : tone;
+              if (n.id === "8A" && seen) tone = "border-(--vos-green) text-(--vos-green)";
               return (
                 <li
                   key={n.id}
                   aria-current={isCur ? "step" : undefined}
-                  className={`flex min-w-[64px] flex-1 flex-col items-center gap-1 rounded-md border px-1 py-1.5 text-center ${tone} ${isCur ? "bg-[#1a2230] ring-2 ring-[#8ecbff]" : ""}`}
+                  className={`flex min-w-[64px] flex-1 flex-col items-center gap-1 rounded-md border px-1 py-1.5 text-center ${tone} ${isCur ? "bg-(--vos-subtle) ring-2 ring-(--vos-focus)" : ""}`}
                 >
                   <span className="font-mono text-[12px] font-semibold">{n.id}</span>
                   <span className="text-[10.5px] leading-tight">{n.label}</span>
@@ -240,34 +247,41 @@ export function FixRunView({ bug, onFixed, onClose }: { bug: BugDef; onFixed: ()
 
           <div className="mt-3 grid gap-3">
             <section>
-              <h3 className="mb-1 text-[12px] font-semibold text-[#8b919b]">Terminal</h3>
-              <pre
-                ref={termRef}
-                tabIndex={0}
-                aria-label="Terminal output"
-                className={`max-h-48 min-h-24 overflow-y-auto rounded-md border border-[#24272d] bg-[#0a0b0d] p-2.5 font-mono text-[12px] leading-relaxed ${FOCUS}`}
-              >
-                {lines("term")}
-              </pre>
+              <h3 className="sr-only">Terminal</h3>
+              <CodeBlock>
+                <div className="flex items-center gap-2 border-b border-(--vos-dk-line) bg-(--vos-dk-head) px-3 py-1.5">
+                  <span className="rounded bg-white/[0.1] px-1.5 py-0.5 font-mono text-[11px] text-(--vos-dk-soft)">terminal</span>
+                  <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-(--vos-dk-muted)">node scripts/verify.js {bug.flow}</span>
+                </div>
+                <pre
+                  ref={termRef}
+                  tabIndex={0}
+                  aria-label="Terminal output"
+                  className="m-0 max-h-48 min-h-24 overflow-y-auto p-3 font-mono text-[12px] leading-relaxed text-(--vos-dk-text)"
+                >
+                  {lines("term")}
+                </pre>
+              </CodeBlock>
             </section>
             <section>
-              <h3 className="mb-1 text-[12px] font-semibold text-[#8b919b]">Illustrative diff</h3>
-              <pre
-                tabIndex={0}
-                aria-label="Illustrative diff"
-                className={`min-h-16 overflow-x-auto rounded-md border border-[#24272d] bg-[#0a0b0d] p-2.5 font-mono text-[12px] leading-relaxed ${FOCUS}`}
-              >
-                {codeStarted ? lines("code") : <span className="text-[#6b717b]"># The change appears in step 8B.</span>}
-              </pre>
+              <h3 className="mb-1 text-[12px] font-semibold text-(--vos-muted)">Illustrative diff</h3>
+              <CodeBlock>
+                <CodeBlockGroup language="diff" filename={fix.file} code={fullDiff} />
+                {codeStarted ? (
+                  <CodeBlockCode code={diffText} language="diff" plain={!diffTyped} className="min-h-16" />
+                ) : (
+                  <p className="p-3 font-mono text-[12px] text-(--vos-dk-muted)"># The change appears in step 8B.</p>
+                )}
+              </CodeBlock>
             </section>
             {showReport && <ReportCard bug={bug} fix={fix} rec={rec} />}
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-[#24272d] px-4 py-3">
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-(--vos-line) px-4 py-3">
           {done ? (
             <>
-              <p className="mr-auto text-[12px] text-[#2ecc71]">Fixed. The bug is switched off in the shop.</p>
+              <p className="mr-auto text-[12px] text-(--vos-green)">Fixed. The bug is switched off in the shop.</p>
               <button type="button" onClick={replay} className={BTN}>Replay</button>
               <button ref={closeRef} type="button" onClick={onClose} className={BTN}>Close</button>
             </>

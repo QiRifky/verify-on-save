@@ -1,12 +1,12 @@
 {
-  "B01": {
+  "B02": {
     "flow": "promo-buy3",
     "status": "failed",
     "reason_code": "assertion_error.confirmed_product_bug",
     "summary": "The promotion check incorrectly treated a qualifying three-item purchase as ineligible.",
     "time": "2026-11-16T14:31:04.813Z"
   },
-  "B10": {
+  "B04": {
     "flow": "vouchers-popup",
     "status": "failed",
     "reason_code": "assertion_error.confirmed_product_bug",

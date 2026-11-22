@@ -1,3 +1,92 @@
 @import "tailwindcss";
 /* Hide the shopping bag button (visual only, component code untouched) */
 button[aria-label^="Bag,"] { display: none !important; }
+
+/*
+ * Demo panel only. Every colour and helper below lives under .vos-panel, so nothing here can change the shop.
+ * The panel is rendered on the deployed site only, never on local hosts.
+ * It follows the shop's own palette: page #f3f1ed, cards white, borders #d9d4cd, text #111111.
+ */
+.vos-panel {
+  /* surfaces */
+  --vos-bg: #f3f1ed;
+  --vos-raised: #ffffff;
+  --vos-subtle: #faf8f5;
+  --vos-line: #e6e1da;
+  --vos-line-strong: #d9d4cd;
+  /* text */
+  --vos-text: #111111;
+  --vos-soft: #4a4540;
+  --vos-muted: #6f6a64;
+  --vos-faint: #8f8982; /* decoration only, never essential text */
+  /* status: text colours, and fills for dots and strokes */
+  --vos-coral: #b3261e;
+  --vos-coral-fill: #e0513f;
+  --vos-green: #2f7a4b;
+  /* primary button, like the shop's pay button */
+  --vos-primary: #111111;
+  --vos-on-primary: #ffffff;
+  --vos-focus: #111111;
+  /* loop diagram lanes */
+  --vos-kiro: #6d4fc2;
+  --vos-kane: #0f766e;
+  --vos-app: #5b6472;
+  /* code, terminal and diff panes stay dark so code reads well on the light panel */
+  --vos-dk-bg: #14161a;
+  --vos-dk-head: #1b1f25;
+  --vos-dk-line: rgba(255, 255, 255, 0.1);
+  --vos-dk-text: #e8eaed;
+  --vos-dk-soft: #c5cad2;
+  --vos-dk-muted: #9aa3b2;
+  --vos-dk-coral: #ff8f80;
+  --vos-dk-green: #5dd48d;
+  background: var(--vos-bg);
+  color: var(--vos-text);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+/* focus ring: dark outline with a white gap */
+.vos-panel :focus-visible {
+  outline: 2px solid var(--vos-focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px #ffffff;
+}
+/* inside dark panes the ring turns light and sits inside the frame, so it is never clipped */
+.vos-panel .vos-dark :focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: -2px;
+  box-shadow: none;
+}
+/* shiki output: keep the dark pane's own background, scroll long lines */
+.vos-panel .vos-shiki pre {
+  margin: 0;
+  padding: 12px;
+  overflow-x: auto;
+  background: transparent !important;
+  font-size: 12px;
+  line-height: 1.6;
+}
+/* loop diagram motion helpers */
+.vos-panel .vos-edge-pulse {
+  stroke-dasharray: 5 13;
+}
+.vos-panel .vos-loop[data-playing="true"] .vos-edge-pulse {
+  animation: vos-dash 0.8s linear infinite;
+}
+.vos-panel .vos-loop[data-playing="true"] .vos-node-active {
+  animation: vos-glow 1.8s ease-in-out infinite;
+}
+@keyframes vos-dash {
+  to { stroke-dashoffset: -18; }
+}
+@keyframes vos-glow {
+  0%, 100% { box-shadow: 0 0 0 2px var(--accent), 0 0 12px -2px var(--accent); }
+  50% { box-shadow: 0 0 0 2px var(--accent), 0 0 24px 0 var(--accent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vos-panel *,
+  .vos-panel *::before,
+  .vos-panel *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

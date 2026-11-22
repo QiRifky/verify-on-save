@@ -673,7 +673,7 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
   const applyPromo = () => {
     const code = promo.trim().toUpperCase();
     if (!code) return setPromoMsg({ text: "Enter a promo code", ok: false });
-    const v: Voucher | undefined = vouchers.find((x) => x.code === code) ?? (bugs.on("B07") ? looseVoucher(code) : undefined);
+    const v: Voucher | undefined = vouchers.find((x) => x.code === code) ?? (bugs.on("B09") ? looseVoucher(code) : undefined);
     if (!v) return setPromoMsg({ text: "Invalid promo code", ok: false });
     const reason = checkVoucher(v, p, subtotal, qty, currency);
     if (reason) return setPromoMsg({ text: "Promo code not eligible: " + reason, ok: false });
@@ -895,7 +895,7 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
             </div>
           )}
 
-          {!bugs.on("B09") && <dl className="mt-5 grid gap-1.5 text-[15px] tabular-nums">
+          {!bugs.on("B10") && <dl className="mt-5 grid gap-1.5 text-[15px] tabular-nums">
             <div className="flex justify-between gap-4"><dt className="text-[#6f6a64]">Subtotal:</dt><dd>{currency}{subtotal.toFixed(2)}</dd></div>
             <div className="flex justify-between gap-4"><dt className="text-[#6f6a64]">Discount:</dt><dd>{applied ? `-${currency}${discount.toFixed(2)}` : `${currency}0.00`}</dd></div>
             <div className="flex justify-between gap-4"><dt className="text-[#6f6a64]">Shipping:</dt><dd>Free</dd></div>
