@@ -19,14 +19,14 @@ export type BugDef = {
 
 export const BUGS: BugDef[] = [
   { id: "B01", title: "BUY3SAVE10 is rejected at exactly 3 items", flow: "promo-buy3" },
-  { id: "B02", title: "BUY3SAVE10 discounts every item, not just 3", flow: "promo-buy6-three-items" },
-  { id: "B03", title: "WELCOME10 discounts every item instead of 1", flow: "promo-welcome-one-item" },
-  { id: "B04", title: "The larger bottle size shows a wrong price", flow: "size-price" },
-  { id: "B05", title: "The quantity plus button adds 2 instead of 1", flow: "pay-quantity-total" },
-  { id: "B06", title: "SAVE20 refuses an order of exactly 120 dollars", flow: "promo-flat-120" },
-  { id: "B07", title: "A wrong promo code is accepted", flow: "promo-invalid" },
-  { id: "B08", title: "The serum code is accepted on a non-serum product", flow: "promo-not-eligible" },
-  { id: "B09", title: "The price summary hides the discount line", flow: "price-summary" },
+  { id: "B02", title: "BUY3SAVE10 takes 50% off the whole order", flow: "promo-buy6-three-items" },
+  { id: "B03", title: "WELCOME10 makes the whole order cost nothing", flow: "promo-welcome-one-item" },
+  { id: "B04", title: "The larger size costs less than the smaller one", flow: "size-price" },
+  { id: "B05", title: "The quantity plus button adds 5 per tap", flow: "pay-quantity-total" },
+  { id: "B06", title: "SAVE20 is refused for every order, however large", flow: "promo-flat-120" },
+  { id: "B07", title: "Any junk promo text is accepted and takes 50% off", flow: "promo-invalid" },
+  { id: "B08", title: "SERUM15 is accepted on every product and takes 50% off", flow: "promo-not-eligible" },
+  { id: "B09", title: "The whole price summary block is hidden", flow: "price-summary" },
   { id: "B10", title: "The vouchers dialog loses the BUY3SAVE10 note", flow: "vouchers-popup" },
 ];
 
@@ -115,34 +115,34 @@ export const useBugs = () => useContext(BugsContext);
 
 // ---------- how each bug changes the shop ----------
 
-type VoucherShape = { code: string; maxItems?: number; minQty?: number; minOrder?: number; category?: string; note?: string };
+type VoucherShape = { code: string; percent?: number; maxItems?: number; minQty?: number; minOrder?: number; shownMinOrder?: number; category?: string; note?: string };
 
-/** B01, B02, B03, B06, B08, B10: small edits to the voucher data. */
+/** B01, B02, B03, B06, B08, B10: edits to the voucher data. B01 and B10 stay as recorded; the others are exaggerated on purpose. */
 export function applyVoucherBugs<T extends VoucherShape>(list: T[], on: (id: BugId) => boolean): T[] {
   return list.map((v) => {
     const o: Partial<VoucherShape> = {};
     if (v.code === "BUY3SAVE10") {
       if (on("B01") && v.minQty !== undefined) o.minQty = v.minQty + 1; // the eligibility line itself stays untouched
-      if (on("B02")) o.maxItems = undefined;
+      if (on("B02")) { o.percent = 50; o.maxItems = undefined; } // half off the whole order
       if (on("B10")) o.note = undefined;
     }
-    if (v.code === "WELCOME10" && on("B03")) o.maxItems = undefined;
-    if (v.code === "SAVE20" && on("B06") && v.minOrder !== undefined) o.minOrder = v.minOrder + 0.01;
-    if (v.code === "SERUM15" && on("B08")) o.category = undefined;
+    if (v.code === "WELCOME10" && on("B03")) { o.percent = 100; o.maxItems = undefined; } // order becomes free
+    if (v.code === "SAVE20" && on("B06") && v.minOrder !== undefined) { o.shownMinOrder = v.minOrder; o.minOrder = Infinity; } // refused always, message still quotes the real minimum
+    if (v.code === "SERUM15" && on("B08")) { o.category = undefined; o.percent = 50; o.maxItems = undefined; } // any product, half off
     return Object.keys(o).length ? { ...v, ...o } : v;
   });
 }
 
-/** B07: a code the shop does not know is treated as a small percentage voucher. */
+/** B07: any unknown text is accepted as a voucher worth 50% off the whole order. */
 export function looseVoucher(code: string) {
-  return { code, percent: 10, maxItems: 1, title: "10% off", condition: "Any order" };
+  return { code, percent: 50, title: "50% off", condition: "Any order" };
 }
 
-/** B04: the price multiplier for a size. Normal shop: 1 for the first size, 1.7 for the others. */
-export function sizeFactor(on: (id: BugId) => boolean, label: string, index: number): number {
-  if (on("B04") && label === "100 ml") return 1.8;
+/** B04: the price multiplier for a size. Normal shop: 1 for the first size, 1.7 for the others. With the bug, the larger size costs half. */
+export function sizeFactor(on: (id: BugId) => boolean, index: number): number {
+  if (on("B04") && index > 0) return 0.5;
   return index > 0 ? 1.7 : 1;
 }
 
-/** B05: how much the quantity plus button adds. */
-export const qtyStep = (on: (id: BugId) => boolean) => (on("B05") ? 2 : 1);
+/** B05: how much the quantity plus button adds (the shop still caps the quantity at its maximum). */
+export const qtyStep = (on: (id: BugId) => boolean) => (on("B05") ? 5 : 1);

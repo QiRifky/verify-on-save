@@ -480,7 +480,7 @@ export type ProductShelfProps = {
 const SPRING = { type: "spring" as const, bounce: 0, duration: 0.55 };
 const INK = "#111111";
 
-type Voucher = { code: string; percent?: number; amount?: number; category?: string; minOrder?: number; minQty?: number; maxItems?: number; title: string; condition: string; note?: string };
+type Voucher = { code: string; percent?: number; amount?: number; category?: string; minOrder?: number; shownMinOrder?: number; minQty?: number; maxItems?: number; title: string; condition: string; note?: string };
 const VOUCHERS: Voucher[] = [
   { code: "WELCOME10", percent: 10, maxItems: 1, title: "10% off", condition: "Any order", note: "Applies to 1 item only. If you buy 2, only 1 gets 10% off and the other stays at the regular price." },
   { code: "BUY3SAVE10", percent: 10, minQty: 3, maxItems: 3, title: "10% off", condition: "Buy 3 or more of the same item", note: "Needs 3 or more of the same item. Only 3 items get 10% off; the rest stay at the regular price. Buy 6 and 3 are discounted, 3 are not." },
@@ -496,7 +496,7 @@ const VOUCHER_RULE = "Only one voucher can be applied per order. WELCOME10, BUY3
 function checkVoucher(v: Voucher, p: Product, subtotal: number, qty: number, currency: string): string | null {
   if (v.category && p.category !== v.category) return v.category + " products only";
   if (v.minQty && qty < v.minQty) return "buy at least " + v.minQty + " items";
-  if (v.minOrder && subtotal < v.minOrder) return "minimum order " + currency + v.minOrder.toFixed(2);
+  if (v.minOrder && subtotal < v.minOrder) return "minimum order " + currency + (v.shownMinOrder ?? v.minOrder).toFixed(2);
   return null;
 }
 
@@ -648,7 +648,7 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
     return () => c.stop();
   }, [spin, reduce]);
 
-  const price = p.price * sizeFactor(bugs.on, size, p.sizes.indexOf(size));
+  const price = p.price * sizeFactor(bugs.on, p.sizes.indexOf(size));
   const subtotal = Math.round(price * qty * 100) / 100;
   const discount = !applied ? 0
     : applied.amount ? Math.round(Math.min(applied.amount, subtotal) * 100) / 100
@@ -849,7 +849,7 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
                   >
                     <input type="radio" name="size" value={sz} checked={on} onChange={() => setSize(sz)} className="sr-only" />
                     <span className="font-medium">{sz}</span>
-                    <span className="text-[#6f6a64] tabular-nums">{currency}{(p.price * sizeFactor(bugs.on, sz, i)).toFixed(2)}</span>
+                    <span className="text-[#6f6a64] tabular-nums">{currency}{(p.price * sizeFactor(bugs.on, i)).toFixed(2)}</span>
                   </label>
                 );
               })}
@@ -895,12 +895,12 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
             </div>
           )}
 
-          <dl className="mt-5 grid gap-1.5 text-[15px] tabular-nums">
+          {!bugs.on("B09") && <dl className="mt-5 grid gap-1.5 text-[15px] tabular-nums">
             <div className="flex justify-between gap-4"><dt className="text-[#6f6a64]">Subtotal:</dt><dd>{currency}{subtotal.toFixed(2)}</dd></div>
-            {!bugs.on("B09") && <div className="flex justify-between gap-4"><dt className="text-[#6f6a64]">Discount:</dt><dd>{applied ? `-${currency}${discount.toFixed(2)}` : `${currency}0.00`}</dd></div>}
+            <div className="flex justify-between gap-4"><dt className="text-[#6f6a64]">Discount:</dt><dd>{applied ? `-${currency}${discount.toFixed(2)}` : `${currency}0.00`}</dd></div>
             <div className="flex justify-between gap-4"><dt className="text-[#6f6a64]">Shipping:</dt><dd>Free</dd></div>
             <div className="flex justify-between gap-4 font-semibold"><dt>Total:</dt><dd>{currency}{total.toFixed(2)}</dd></div>
-          </dl>
+          </dl>}
 
           <div className="mt-7 flex items-stretch gap-3">
             <div className="flex items-center rounded-xl border border-[#d9d4cd] bg-white">

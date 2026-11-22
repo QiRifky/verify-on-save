@@ -3,9 +3,12 @@
  * Wording avoids the exact strings that scripts/verify.js asks Kane to look for in the shop.
  */
 import { useRef, useState, type KeyboardEvent } from "react";
-import { BUGS, useBugs, type BugId } from "@/lib/bugs";
+import { BUGS, useBugs, type BugDef, type BugId } from "@/lib/bugs";
+import { BUG_FIXES, BUG_GROUPS } from "@/data/bug-fixes";
 import { RECORDED } from "@/data/recorded";
 import { FixRunView } from "@/components/demo/FixRunView";
+
+const BUG_BY_ID = Object.fromEntries(BUGS.map((b) => [b.id, b])) as Record<BugId, BugDef>;
 
 const REPO_URL = "https://github.com/QiRifky/verify-on-save";
 const VIDEO_URL = "https://youtu.be/0ELXQwoe02Y";
@@ -108,6 +111,9 @@ function PlantTab({ fixed, onToggle, onReset, onFix, setRef }: PlantTabProps) {
       <p className="rounded-md border border-[#24272d] bg-[#0f1114] p-3 text-[13px] leading-relaxed text-[#c5cad2]">
         Toggles change this live app. Verdicts are recorded from real Kane CLI runs on my machine; Kane itself does not run in your browser.
       </p>
+      <p className="mt-2 text-[12px] leading-relaxed text-[#8b919b]">
+        These planted bugs are exaggerated on purpose so they are easy to see. Real bugs are usually subtler.
+      </p>
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <button
           type="button"
@@ -119,8 +125,17 @@ function PlantTab({ fixed, onToggle, onReset, onFix, setRef }: PlantTabProps) {
         </button>
         <CopyButton label="Copy link" done="Link copied" getText={bugs.link} />
       </div>
-      <ul className="mt-4 grid gap-3">
-        {BUGS.map((b) => {
+      {BUG_GROUPS.filter((g) => g.ids.length > 0).map((g) => (
+      <section key={g.title} aria-labelledby={`group-${g.title.replace(/\W+/g, "-")}`} className="mt-5">
+      <h2
+        id={`group-${g.title.replace(/\W+/g, "-")}`}
+        className={`mb-2 text-[12px] text-[#8b919b] ${g.voucher ? "font-mono" : ""}`}
+      >
+        {g.title}
+      </h2>
+      <ul className="grid gap-3">
+        {g.ids.map((id) => {
+          const b = BUG_BY_ID[id];
           const on = bugs.on(b.id);
           const labelId = `bug-${b.id}-label`;
           return (
@@ -142,6 +157,7 @@ function PlantTab({ fixed, onToggle, onReset, onFix, setRef }: PlantTabProps) {
                       <span className="inline-block rounded-full border border-[#2ecc71] px-2.5 py-0.5 text-[12px] font-semibold text-[#2ecc71]">Fixed</span>
                     )}
                   </p>
+                  {on && <p className="mt-2 text-[12px] leading-relaxed text-[#8b919b]">Try it: {BUG_FIXES[b.id].tryIt}</p>}
                   {on && (
                     <button
                       ref={(el) => setRef(`fix-${b.id}`, el)}
@@ -171,6 +187,8 @@ function PlantTab({ fixed, onToggle, onReset, onFix, setRef }: PlantTabProps) {
           );
         })}
       </ul>
+      </section>
+      ))}
     </div>
   );
 }
