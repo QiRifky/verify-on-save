@@ -1,0 +1,16 @@
+{
+  "B01": {
+    "flow": "promo-buy3",
+    "status": "failed",
+    "reason_code": "assertion_error.confirmed_product_bug",
+    "summary": "The promotion check incorrectly treated a qualifying three-item purchase as ineligible.",
+    "time": "2026-11-16T14:31:04.813Z"
+  },
+  "B10": {
+    "flow": "vouchers-popup",
+    "status": "failed",
+    "reason_code": "assertion_error.confirmed_product_bug",
+    "summary": "The voucher card for BUY3SAVE10 does not show the required explanation of how the 10% discount is limited to three items.",
+    "time": "2026-11-22T01:48:20.819Z"
+  }
+}

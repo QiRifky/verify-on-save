@@ -19,6 +19,7 @@ import { useEffect, useId, useRef, useState, type PointerEvent as ReactPointerEv
 import { AnimatePresence, LayoutGroup, animate, motion, useMotionValue, useReducedMotion, useTransform, type MotionValue } from "motion/react";
 import { Check, ChevronDown, ChevronLeft, Minus, Plus, ShoppingBag, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { applyVoucherBugs, looseVoucher, qtyStep, sizeFactor, useBugs } from "@/lib/bugs";
 
 type Kind = "jar" | "tube" | "pump" | "dropper" | "perfume" | "mist" | "bottle" | "stick" | "lip";
 
@@ -632,6 +633,9 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
   const vouchersBtnRef = useRef(null as HTMLButtonElement | null);
   const vouchersCloseRef = useRef(null as HTMLButtonElement | null);
   const copyTimer = useRef(0);
+  // demo bug flags: all off unless the split-screen panel plants one
+  const bugs = useBugs();
+  const vouchers = applyVoucherBugs(VOUCHERS, bugs.on);
   const [section, setSection] = useState("Details" as string | null);
   const closeRef = useRef(null as HTMLButtonElement | null);
   const drag = useRef(null as { x: number; v: number; samples: { x: number; t: number }[] } | null);
@@ -644,7 +648,7 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
     return () => c.stop();
   }, [spin, reduce]);
 
-  const price = p.price * (p.sizes.indexOf(size) > 0 ? 1.7 : 1);
+  const price = p.price * sizeFactor(bugs.on, size, p.sizes.indexOf(size));
   const subtotal = Math.round(price * qty * 100) / 100;
   const discount = !applied ? 0
     : applied.amount ? Math.round(Math.min(applied.amount, subtotal) * 100) / 100
@@ -669,7 +673,7 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
   const applyPromo = () => {
     const code = promo.trim().toUpperCase();
     if (!code) return setPromoMsg({ text: "Enter a promo code", ok: false });
-    const v = VOUCHERS.find((x) => x.code === code);
+    const v: Voucher | undefined = vouchers.find((x) => x.code === code) ?? (bugs.on("B07") ? looseVoucher(code) : undefined);
     if (!v) return setPromoMsg({ text: "Invalid promo code", ok: false });
     const reason = checkVoucher(v, p, subtotal, qty, currency);
     if (reason) return setPromoMsg({ text: "Promo code not eligible: " + reason, ok: false });
@@ -677,6 +681,9 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
     setPromoMsg({ text: v.amount ? "Promo " + v.code + " applied: $" + v.amount.toFixed(2) + " off" : "Promo " + v.code + " applied: " + v.percent + "% off", ok: true });
   };
   const removePromo = () => { setApplied(null); setPromoMsg(null); };
+
+  // planting or removing a demo bug clears any applied promo, so the shop starts clean
+  useEffect(() => { setApplied(null); setPromoMsg(null); }, [bugs.key]);
 
   // re-check the applied voucher whenever the size or quantity changes
   useEffect(() => {
@@ -842,7 +849,7 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
                   >
                     <input type="radio" name="size" value={sz} checked={on} onChange={() => setSize(sz)} className="sr-only" />
                     <span className="font-medium">{sz}</span>
-                    <span className="text-[#6f6a64] tabular-nums">{currency}{(p.price * (i > 0 ? 1.7 : 1)).toFixed(2)}</span>
+                    <span className="text-[#6f6a64] tabular-nums">{currency}{(p.price * sizeFactor(bugs.on, sz, i)).toFixed(2)}</span>
                   </label>
                 );
               })}
@@ -890,7 +897,7 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
 
           <dl className="mt-5 grid gap-1.5 text-[15px] tabular-nums">
             <div className="flex justify-between gap-4"><dt className="text-[#6f6a64]">Subtotal:</dt><dd>{currency}{subtotal.toFixed(2)}</dd></div>
-            <div className="flex justify-between gap-4"><dt className="text-[#6f6a64]">Discount:</dt><dd>{applied ? `-${currency}${discount.toFixed(2)}` : `${currency}0.00`}</dd></div>
+            {!bugs.on("B09") && <div className="flex justify-between gap-4"><dt className="text-[#6f6a64]">Discount:</dt><dd>{applied ? `-${currency}${discount.toFixed(2)}` : `${currency}0.00`}</dd></div>}
             <div className="flex justify-between gap-4"><dt className="text-[#6f6a64]">Shipping:</dt><dd>Free</dd></div>
             <div className="flex justify-between gap-4 font-semibold"><dt>Total:</dt><dd>{currency}{total.toFixed(2)}</dd></div>
           </dl>
@@ -901,7 +908,7 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
                 <Minus className="size-4" />
               </button>
               <span className="w-7 text-center text-[17px] tabular-nums" aria-live="polite">{qty}</span>
-              <button type="button" aria-label="Increase quantity" onClick={() => setQty((q) => Math.min(9, q + 1))} className="grid h-full w-11 place-items-center rounded-r-xl text-[#111111] transition-colors active:bg-black/[0.06]">
+              <button type="button" aria-label="Increase quantity" onClick={() => setQty((q) => Math.min(9, q + qtyStep(bugs.on)))} className="grid h-full w-11 place-items-center rounded-r-xl text-[#111111] transition-colors active:bg-black/[0.06]">
                 <Plus className="size-4" />
               </button>
             </div>
@@ -974,7 +981,7 @@ function ProductPage({ p, currency, onClose, onAdd, bagRef }: {
               <p className="mt-1 text-[14px] text-[#6f6a64]">Copy a code, then paste it in the Promo code field.</p>
               <p className="mt-1 text-[13px] text-[#6f6a64]">{VOUCHER_RULE}</p>
               <ul className="mt-5 grid min-h-0 flex-1 gap-3 overflow-y-auto">
-                {VOUCHERS.map((v) => (
+                {vouchers.map((v) => (
                   <li key={v.code} className="flex items-center gap-3 rounded-xl border border-[#e6e1da] p-4">
                     <div className="min-w-0 flex-1">
                       <span className="inline-block rounded-md border border-dashed border-[#8f8982] px-2 py-0.5 text-[13px] font-semibold tracking-[0.04em]">{v.code}</span>
