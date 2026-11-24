@@ -64,13 +64,28 @@ const FLOWS = [
 
 function runKane(flow) {
   return new Promise((resolve) => {
-    const cmd = `kane-cli run "${flow.objective}" --url ${APP_URL} --agent --headless`;
-    const child = spawn(cmd, { shell: true });
+    // On Windows the kane-cli shim needs a shell. Elsewhere the arguments are passed
+    // directly, so a shell never expands the $ in amounts such as $49.30.
+    const child =
+      process.platform === "win32"
+        ? spawn(
+            `kane-cli run "${flow.objective}" --url ${APP_URL} --agent --headless`,
+            { shell: true }
+          )
+        : spawn("kane-cli", [
+            "run",
+            flow.objective,
+            "--url",
+            APP_URL,
+            "--agent",
+            "--headless",
+          ]);
     let stdout = "";
     let stderr = "";
-    child.stdout.on("data", (d) => (stdout += d));
-    child.stderr.on("data", (d) => (stderr += d));
-    child.on("close", (code) => {
+    let finished = false;
+    const finish = (code, spawnError) => {
+      if (finished) return;
+      finished = true;
       let end = null;
       for (const line of stdout.split(/\r?\n/)) {
         try {
@@ -89,13 +104,19 @@ function runKane(flow) {
         status,
         result_code: end ? end.result_code : null,
         reason_code: end ? end.reason_code : null,
-        reason: end ? end.reason : stderr.slice(-500) || "No run_end event found",
+        reason: end
+          ? end.reason
+          : spawnError || stderr.slice(-500) || "No run_end event found",
         summary,
         test_url: end ? end.test_url : null,
         exit_code: code,
         time: new Date().toISOString(),
       });
-    });
+    };
+    child.stdout.on("data", (d) => (stdout += d));
+    child.stderr.on("data", (d) => (stderr += d));
+    child.on("error", (e) => finish(null, "Could not start kane-cli: " + e.message));
+    child.on("close", (code) => finish(code, null));
   });
 }
 

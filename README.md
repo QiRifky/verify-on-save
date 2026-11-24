@@ -107,8 +107,7 @@ node scripts/verify.js promo-buy3                               # Kane fails
 git checkout src/components/ui/skincare-product-shelf.tsx       # reset
 ```
 
-See `docs/example-failed-result.json` for a real failed run.
-
+See `docs/example-failed-result.json` for a real failed run and `docs/example-passed-result.json` for a full passing run of all ten flows.
 ## Notes
 
 - `assertion_error.*` reason codes are treated as app bugs; other codes are treated as infrastructure problems and the agent must not change app code.
