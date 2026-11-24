@@ -113,6 +113,7 @@ See `docs/example-failed-result.json` for a real failed run and `docs/example-pa
 - `assertion_error.*` reason codes are treated as app bugs; other codes are treated as infrastructure problems and the agent must not change app code.
 - A "passed" status is not trusted blindly. If Kane reports passed but its summary says the task could not be completed or confirmed, `verify.js` marks the flow `SUSPECT` and the overall result as failed. This guards against false passes.
 - `verify.js` prints `ERROR` when Kane cannot run at all (for example, an expired login), so a broken setup is never counted as a pass.
+- Setup or infrastructure failures (a suspect run, an error, or a failure that is not an `assertion_error`) are retried once, and the report records `attempts` and `firstAttempt`. Real app bugs are never retried.
 - `scripts/package.json` sets `"type": "commonjs"` so the scripts run even though the app's own `package.json` uses ES modules.
 - Each Kane run consumes credits, so the hook is limited to source files.
 
