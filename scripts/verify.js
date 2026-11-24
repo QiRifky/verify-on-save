@@ -120,6 +120,25 @@ function runKane(flow) {
   });
 }
 
+// Infrastructure problems (setup error, suspect, or a failure that is not an app bug) are
+// retried once, as the steering rules say. Real app bugs (assertion_error) are never retried.
+async function runFlow(flow) {
+  const first = await runKane(flow);
+  first.attempts = 1;
+  const isAppBug =
+    first.status === "failed" && String(first.reason_code || "").startsWith("assertion_error");
+  if (first.status === "passed" || isAppBug) return first;
+  console.log(`Retrying ${flow.name} once (${first.status}, not an app bug) ...`);
+  const second = await runKane(flow);
+  second.attempts = 2;
+  second.firstAttempt = {
+    status: first.status,
+    reason_code: first.reason_code,
+    reason: String(first.reason || "").slice(0, 300),
+  };
+  return second;
+}
+
 (async () => {
   fs.mkdirSync(OUT_DIR, { recursive: true });
   const only = process.argv.slice(2);
@@ -131,7 +150,7 @@ function runKane(flow) {
   const results = [];
   for (const flow of flows) {
     console.log(`Running flow: ${flow.name} ...`);
-    results.push(await runKane(flow));
+    results.push(await runFlow(flow));
   }
   const allPassed = results.every((r) => r.status === "passed");
   // .verify is excluded because last-result.json itself is tracked by git
