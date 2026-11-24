@@ -2,3 +2,4 @@ node_modules/
 .verify/reference/
 index.backup.html
 dist/
+.verify/last-result.json
