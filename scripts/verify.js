@@ -62,6 +62,42 @@ const FLOWS = [
   },
 ];
 
+// Reads Kane's JSON event stream. Returns the run_end event, plus what the run reached at
+// its final assertion: the last "assert" step event and Kane's own expected/extracted values.
+function parseKaneOutput(stdout) {
+  let end = null;
+  let assertStep = null;
+  for (const line of stdout.split(/\r?\n/)) {
+    let evt;
+    try {
+      evt = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    if (evt.type === "run_end") end = evt;
+    else if (
+      typeof evt.step === "number" &&
+      /^assert/i.test(evt.remark || "") &&
+      (evt.status === "done" || evt.status === "failed")
+    ) {
+      assertStep = evt;
+    }
+  }
+  // Kane stores each checked value under run_end.context.memory; the last step is the final check
+  const memory = (end && end.context && end.context.memory) || {};
+  const entries = Object.values(memory).sort((a, b) => (a.step || 0) - (b.step || 0));
+  const last = entries.length ? entries[entries.length - 1] : null;
+  const finalAssertion = {
+    reached: !!assertStep,
+    step_status: assertStep ? assertStep.status : null,
+    condition: last ? last.condition || last.human_description || null : null,
+    expected: last ? last.expected_value ?? null : null,
+    observed: last ? last.extracted_value ?? null : null,
+    reasoning: last ? last.reasoning || null : null,
+  };
+  return { end, finalAssertion };
+}
+
 function runKane(flow) {
   return new Promise((resolve) => {
     // On Windows the kane-cli shim needs a shell. Elsewhere the arguments are passed
@@ -86,16 +122,14 @@ function runKane(flow) {
     const finish = (code, spawnError) => {
       if (finished) return;
       finished = true;
-      let end = null;
-      for (const line of stdout.split(/\r?\n/)) {
-        try {
-          const evt = JSON.parse(line);
-          if (evt.type === "run_end") end = evt;
-        } catch {}
-      }
+      const { end, finalAssertion } = parseKaneOutput(stdout);
       let status = end ? end.status : "error";
       const summary = end ? end.summary : null;
-      if (status === "passed" && summary && DOUBT.test(summary)) {
+      // A clean exit and a "passed" status are not enough: the run must have reached its
+      // final assertion and passed it. Otherwise the flow is unfinished.
+      if (status === "passed" && finalAssertion.step_status !== "done") {
+        status = "unfinished";
+      } else if (status === "passed" && summary && DOUBT.test(summary)) {
         status = "suspect";
       }
       resolve({
@@ -108,6 +142,7 @@ function runKane(flow) {
           ? end.reason
           : spawnError || stderr.slice(-500) || "No run_end event found",
         summary,
+        final_assertion: end ? finalAssertion : null,
         test_url: end ? end.test_url : null,
         exit_code: code,
         time: new Date().toISOString(),
@@ -139,6 +174,7 @@ async function runFlow(flow) {
   return second;
 }
 
+if (require.main === module) {
 (async () => {
   fs.mkdirSync(OUT_DIR, { recursive: true });
   const only = process.argv.slice(2);
@@ -169,6 +205,14 @@ async function runFlow(flow) {
   );
   for (const r of results) {
     console.log(`[${r.status.toUpperCase()}] ${r.flow}: ${r.summary || r.reason}`);
+    const fa = r.final_assertion;
+    if (r.status !== "passed" && fa) {
+      console.log(
+        `    final assertion: ${fa.reached ? fa.step_status : "NOT REACHED"}` +
+          (fa.condition ? ` | check: ${fa.condition}` : "") +
+          ` | expected: ${fa.expected} | observed: ${fa.observed}`
+      );
+    }
   }
   console.log(
     `Ran ${flows.length} of ${FLOWS.length} flows` +
@@ -176,3 +220,5 @@ async function runFlow(flow) {
   );
   process.exit(allPassed ? 0 : 1);
 })();
+}
+module.exports = { parseKaneOutput };
